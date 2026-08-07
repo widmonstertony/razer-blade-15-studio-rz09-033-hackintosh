@@ -1,0 +1,13 @@
+# Preserve binaries byte-for-byte and force auditable text files to LF.
+* -text
+.gitattributes text eol=lf
+.gitignore text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.plist text eol=lf
+*.dsl text eol=lf
+*.hex text eol=lf
+**/CodeResources text eol=lf
+.contentFlavour text eol=lf
+.contentVisibility text eol=lf
+LICENSE text eol=lf
