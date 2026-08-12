@@ -534,11 +534,21 @@
 				<data>
 				AACbPg==
 				</data>
+				<key>RazerOLEDWakeFixVersion</key>
+				<string>41.0-oled-s3-dpcd-state-diagnostic</string>
+				<key>complete-modeset</key>
+				<data>
+				AQAAAA==
+				</data>
+				<key>complete-modeset-framebuffers</key>
+				<data>
+				AAAAAAAAAAA=
+				</data>
 				<key>dpcd-max-link-rate</key>
 				<data>
 				FAAAAA==
 				</data>
-				<key>enable-backlight-registers-fix</key>
+				<key>enable-backlight-registers-alternative-fix</key>
 				<data>
 				AQAAAA==
 				</data>
@@ -578,6 +588,10 @@
 				<data>
 				AQAAAA==
 				</data>
+				<key>framebuffer-flags</key>
+				<data>
+				SxMAAA==
+				</data>
 				<key>hda-gfx</key>
 				<string>onboard-1</string>
 			</dict>
@@ -604,6 +618,24 @@
 				<string></string>
 				<key>MinKernel</key>
 				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>BundlePath</key>
+				<string>RazerOLEDWakeFix.kext</string>
+				<key>Comment</key>
+				<string>S3: read-only cold/wake DPCD receiver-state comparison; retain verified V40 restore path</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/RazerOLEDWakeFix</string>
+				<key>MaxKernel</key>
+				<string>25.2.99</string>
+				<key>MinKernel</key>
+				<string>25.2.0</string>
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
@@ -1131,6 +1163,80 @@
 				<key>Skip</key>
 				<integer>0</integer>
 			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>Base</key>
+				<string>__ZN31AppleIntelFramebufferController15SetDPPowerStateEP21AppleIntelFramebufferhP21AppleIntelDisplayPath</string>
+				<key>Comment</key>
+				<string>Razer OLED AUX power retry delay 1ms to 300ms</string>
+				<key>Count</key>
+				<integer>1</integer>
+				<key>Enabled</key>
+				<false/>
+				<key>Find</key>
+				<data>
+				vwEAAADoAAAAAEyJ50yJ/roABgAA
+				</data>
+				<key>Identifier</key>
+				<string>com.apple.driver.AppleIntelCFLGraphicsFramebuffer</string>
+				<key>Limit</key>
+				<integer>256</integer>
+				<key>Mask</key>
+				<data>
+				////////AAAAAP//////////////
+				</data>
+				<key>MaxKernel</key>
+				<string>25.2.99</string>
+				<key>MinKernel</key>
+				<string>25.2.0</string>
+				<key>Replace</key>
+				<data>
+				ACwBAAAAAAAAAAAAAAAAAAAAAAAA
+				</data>
+				<key>ReplaceMask</key>
+				<data>
+				AP////8AAAAAAAAAAAAAAAAAAAAA
+				</data>
+				<key>Skip</key>
+				<integer>0</integer>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>Base</key>
+				<string></string>
+				<key>Comment</key>
+				<string>Razer Samsung OLED symbol-free unique match: wait 500ms before eDP link training</string>
+				<key>Count</key>
+				<integer>1</integer>
+				<key>Enabled</key>
+				<false/>
+				<key>Find</key>
+				<data>
+				Qb8yAAAAQb37jfP/QbwAAACwvxkAAAA=
+				</data>
+				<key>Identifier</key>
+				<string>com.apple.driver.AppleIntelCFLGraphicsFramebuffer</string>
+				<key>Limit</key>
+				<integer>0</integer>
+				<key>Mask</key>
+				<data>
+				</data>
+				<key>MaxKernel</key>
+				<string>25.2.99</string>
+				<key>MinKernel</key>
+				<string>25.2.0</string>
+				<key>Replace</key>
+				<data>
+				Qb8yAAAAQb37jfP/QbwAAACwv/QBAAA=
+				</data>
+				<key>ReplaceMask</key>
+				<data>
+				</data>
+				<key>Skip</key>
+				<integer>0</integer>
+			</dict>
 		</array>
 		<key>Quirks</key>
 		<dict>
@@ -1402,7 +1508,7 @@
 				Rg==
 				</data>
 				<key>boot-args</key>
-				<string>amfi=0x80 agdpmod=vit9696 -lilubetaall</string>
+				<string>amfi=0x80 -lilubetaall igdebug=0x4000180a01248a73</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==

@@ -38,6 +38,8 @@ See [docs/HARDWARE.md](docs/HARDWARE.md) for device paths and configuration note
 
 The `main` branch begins with the configuration exactly as it was found before the OLED/wake work, except for public-safety redactions and redistribution exclusions.
 
+The `agent/pre-next-fix-snapshot` branch records the sanitized configuration captured on 2026-08-11 immediately before the next repair attempt. It preserves the currently deployed `RazerOLEDWakeFix.kext` v2.8.0 binary and the `41.0-oled-s3-dpcd-state-diagnostic` configuration marker. See [docs/PRE-NEXT-FIX-SNAPSHOT.md](docs/PRE-NEXT-FIX-SNAPSHOT.md).
+
 Current known issues:
 
 1. Native OLED brightness adjustment does not affect the panel as expected.
