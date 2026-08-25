@@ -1,122 +1,75 @@
-# Razer Blade 15 Studio 2020 (RZ09-033) Hackintosh EFI
+# Razer Blade 15 Studio 2020 Hackintosh — OLED Wake V61-P1
 
-> Public, sanitized snapshot of the **pre-fix** OpenCore configuration from a Razer Blade 15 Studio Edition (Early 2020). This baseline was captured on 2026-08-07 before changing OLED brightness or sleep/wake behavior.
+[简体中文](README.zh-CN.md)
 
-这是 Razer Blade 15 Studio Edition 2020（RZ09-033）的 OpenCore EFI 配置备份。仓库首先保存修改前基线；OLED 亮度与睡眠唤醒修复会在本机测试通过后另行提交，方便比较和回滚。
+This release is the **validated OLED sleep/wake build**, not the older pre-fix snapshot. On the exact test machine, a real Normal Sleep/Wake cycle returned to a visible 10-bit desktop and passed the V61-P1 runtime checks.
 
-## Important warning / 重要警告
+## Validated target
 
-This repository is intentionally **not drop-in bootable**:
-
-- SMBIOS identifiers were replaced with OpenCore sample placeholders.
-- Apple-derived Wi-Fi and filesystem binaries are not redistributed.
-- The baseline keeps references to omitted files so it accurately documents the running configuration.
-
-Do not copy this repository directly to an EFI System Partition. Generate unique SMBIOS values and restore the omitted files from your own legally obtained macOS/OpenCore installation first.
-
-不要直接把仓库内容覆盖到 EFI 分区。使用前必须生成自己的 SMBIOS，并从个人安装环境恢复未公开的 Apple 二进制。
-
-## Hardware
-
-| Component | Model |
+| Item | Exact tested value |
 | --- | --- |
-| Laptop | Razer Blade 15 Studio Edition (Early 2020), RZ09-033 |
-| BIOS | Razer 1.06 |
-| CPU | Intel Core i7-10875H, 8 cores / 16 threads |
-| iGPU | Intel UHD Graphics 630, PCI `8086:9BC4` |
-| dGPU | NVIDIA Quadro RTX 5000 Max-Q, PCI `10DE:1EB5` — disabled in macOS |
-| Internal panel | Samsung `SDCA029`, 3840×2160 OLED touch display |
-| Audio | Realtek ALC298 (`10EC:0298`) |
-| Wi-Fi | Broadcom BCM4360-class adapter, PCI `14E4:43A0` |
-| Storage | Crucial P3 4 TB NVMe (`CT4000P3SSD8`) |
-| Memory | 64 GB DDR4 |
-| SMBIOS profile | `MacBookPro16,1` |
+| Laptop | Razer Blade 15 Studio Edition 2020, RZ09-0330Q, BIOS 1.06 |
+| CPU / iGPU | Intel Core i7-10875H / UHD 630 `8086:9BC4` |
+| Internal panel | Samsung OLED `4C83:A029`, EDID name `SDCA029` |
+| macOS | Tahoe 26.2, build `25C56`, Darwin `25.2.0` |
+| OpenCore | 1.0.7 |
+| OLED patch | V61, kext version 4.5.0, marker `61.0-oled-s3-edp14-rate-select` |
+| Input patch | HID V12 |
+| Display mode | 1680×945 HiDPI, 3360×1890 backing, 60 Hz, 30-bit framebuffer |
+| Wake result | Normal Sleep/Wake passed; desktop visible after automatic protected redraw |
 
-See [docs/HARDWARE.md](docs/HARDWARE.md) for device paths and configuration notes.
+This is an exact-target result, not a universal OLED fix. `RazerOLEDWakeFix.kext` is deliberately restricted to Darwin `25.2.0`–`25.2.99`. Do not remove that guard or use it on another build/panel without source-level revalidation.
 
-## Repository state
+## What this release contains
 
-The `main` branch begins with the configuration exactly as it was found before the OLED/wake work, except for public-safety redactions and redistribution exclusions.
+- OpenCore 1.0.7 boot files and a sanitized V61-P1 `config.plist`.
+- `RazerOLEDWakeFix.kext` and its auditable source.
+- HID V12 VoodooI2C/VoodooI2CHID binaries and reproducible source patches.
+- A user-space, event-driven wake rescue service. Eight seconds after a real wake, it briefly changes the exact Samsung panel from 1680×945 HiDPI to 1600×900 HiDPI and restores the original mode. It stays idle at all other times and refuses to act on another panel or mode.
+- English and Chinese setup, root-patch, verification, thermal and rollback instructions.
 
-Current known issues:
+The working result uses both layers: the V61 kernel patch restores the panel's eDP 1.4 link-training path, and the user-space display transaction forces CoreGraphics to redraw the recovered framebuffer. The service does not need administrator privileges.
 
-1. Native OLED brightness adjustment does not affect the panel as expected.
-2. After display/system sleep, the internal OLED can remain black after wake.
-3. `SSDT-SLPWAK.aml` and its `_WAK` → `ZWAK` rename are present but disabled in the baseline.
-4. The baseline uses the legacy `enable-backlight-registers-fix`, which is obsolete on macOS 13.4 and newer.
+## Important: not drop-in bootable
 
-The planned test patch is documented in [docs/KNOWN-ISSUES.md](docs/KNOWN-ISSUES.md). It is deliberately not part of this baseline commit.
+The public tree is intentionally sanitized and incomplete:
 
-## Configured subsystems
+- MLB, ROM, serial number and UUID are OpenCore sample placeholders.
+- OpenCore password hash and salt are empty.
+- Apple-derived `IOSkywalkFamily.kext`, `IO80211FamilyLegacy.kext`, `HfsPlus.efi` and `apfs_aligned.efi` are not redistributed.
+- Wi-Fi and internal-audio root patches must be produced from your own legally obtained installation.
 
-- Intel UHD 630 framebuffer and 4K eDP link patches via WhateverGreen
-- NVIDIA dGPU power-off through `SSDT-DDGPU.aml`
-- ALC298 audio via AppleALC plus VerbStub
-- Battery, ambient-light sensor and SMC monitoring
-- I2C HID trackpad/touch support and PS/2 keyboard support
-- Custom USB map for `MacBookPro16,1`
-- Realtek card reader support
-- Broadcom Wi-Fi compatibility path for Darwin 23+
-- Thunderbolt hot-plug ACPI configuration
+Never overwrite the internal EFI first. Prepare a FAT32 USB test EFI, restore the omitted files from your own machine, insert a unique SMBIOS, run `ocvalidate`, and prove boot/input/wake before touching the internal ESP.
 
-“Configured” does not mean every item has been re-tested on every macOS release.
+## Start here
 
-## Layout
+1. Read [Installation](docs/INSTALL.md) end to end.
+2. Read [Root patches and Wi-Fi](docs/ROOT-PATCHES.md) before changing macOS.
+3. Prepare and boot the USB EFI.
+4. Install the wake rescue with `Tools/OLEDWakeRescue/install.sh`.
+5. Run `Tools/verify-v61p1.sh`, then perform one controlled sleep/wake test.
+6. Keep the USB and original private EFI until several cold boots, restarts and wakes pass.
 
-```text
-EFI/
-  BOOT/
-  OC/
-    ACPI/
-    Drivers/
-    Kexts/
-    Resources/
-    Tools/
-    config.plist
-ACPI-Sources/       # iasl-decompiled audit copies
-docs/
-```
+The full mechanism and the final validation evidence are in [OLED wake design and validation](docs/OLED-WAKE.md). Recovery is in [Rollback](docs/ROLLBACK.md).
 
-The files under `ACPI-Sources/` are reconstructed by Intel iasl from the AML binaries. They are provided for review and are not guaranteed to match the original author’s formatting or comments.
+## Current practical status
 
-## Public redactions
+- OLED Normal Sleep/Wake: **working on the exact tested target** with V61 plus the automatic redraw service.
+- Trackpad and touchscreen: working with HID V12.
+- 10-bit output: retained; the post-wake test reported `Framebuffer Depth: 30-Bit Color (ARGB2101010)`.
+- Broadcom BCM4360 Wi-Fi: working only with the machine's omitted Apple-derived kexts and exact-build root patches.
+- Internal audio: depends on the exact-build root patch used by the tested installation.
+- NVIDIA Quadro RTX 5000 Max-Q: disabled in macOS.
+- Future macOS updates: unsupported until all binary patches and V61 offsets are revalidated for the new build.
 
-The following values are replaced with the placeholders used by OpenCore `Sample.plist`:
+## Heat and fan behavior
 
-- `PlatformInfo -> Generic -> MLB`
-- `PlatformInfo -> Generic -> ROM`
-- `PlatformInfo -> Generic -> SystemSerialNumber`
-- `PlatformInfo -> Generic -> SystemUUID`
-- OpenCore password hash and salt are forced empty
+macOS is not automatically cooler on this laptop. The Razer EC/fan policy is designed for Windows, while a 4K 10-bit HiDPI desktop makes `WindowServer` continuously composite a large framebuffer. See [Thermals and power](docs/THERMALS.md) before changing CPU or fan controls. The OLED rescue agent is event-driven and idle between wake events; it is not a continuous thermal load.
 
-Never publish real MLB, ROM, serial or UUID values. Generate a new identity with [GenSMBIOS](https://github.com/corpnewt/GenSMBIOS) before use.
+## Source and licensing
 
-## Files not redistributed
-
-The running EFI contains several Apple-derived files that are intentionally absent here:
-
-- `EFI/OC/Kexts/IOSkywalkFamily.kext`
-- `EFI/OC/Kexts/IO80211FamilyLegacy.kext`
-- `EFI/OC/Drivers/HfsPlus.efi`
-- `EFI/OC/Drivers/apfs_aligned.efi`
-
-Obtain required Apple components from your own macOS installation or the documented workflow of [OpenCore Legacy Patcher](https://github.com/dortania/OpenCore-Legacy-Patcher). OpenCore can use the open-source `OpenHfsPlus.efi` where appropriate.
-
-## Validation
-
-- Public config parses as an XML property list.
-- Original SMBIOS identifiers were scanned and are absent from the public tree.
-- The baseline config validates with OpenCore `ocvalidate` 1.0.6.
-- All included AML files were successfully disassembled with Intel iasl 20260408.
-
-## Restore and use
-
-See [docs/RESTORE.md](docs/RESTORE.md). Keep a bootable USB EFI and a copy of the original private `config.plist` before testing changes.
-
-## Third-party projects
-
-This is an aggregation/configuration repository. Included third-party components remain under their upstream licenses. See [THIRD_PARTY.md](THIRD_PARTY.md).
+Original repository documentation, configuration and custom code are under [MIT](LICENSE). Embedded third-party projects retain their upstream licenses; see [THIRD_PARTY.md](THIRD_PARTY.md). No Apple-derived binary named above is included.
 
 ## Disclaimer
 
-Hackintosh configurations are hardware- and firmware-specific. Test from removable media first. No warranty is provided, and this repository is not affiliated with Apple, Razer, Intel, NVIDIA or the OpenCore developers.
+Hackintosh configuration is hardware-, firmware- and build-specific. A wrong framebuffer or kernel patch can cause a black screen or an unbootable system. Keep Windows/direct firmware boot and a known-good USB recovery path. This project is not affiliated with Apple, Razer, Intel, NVIDIA or the upstream OpenCore projects.

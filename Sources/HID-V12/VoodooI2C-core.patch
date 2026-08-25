@@ -1,0 +1,1247 @@
+diff --git a/Multitouch Support/MultitouchHelpers.hpp b/Multitouch Support/MultitouchHelpers.hpp
+index b5b8e2c..fd82cc8 100644
+--- a/Multitouch Support/MultitouchHelpers.hpp	
++++ b/Multitouch Support/MultitouchHelpers.hpp	
+@@ -12,11 +12,22 @@
+ #include <IOKit/IOLib.h>
+ #include <IOKit/IOService.h>
+ 
+-typedef struct {
++typedef struct VoodooI2CMultitouchEvent {
+     UInt8 contact_count;
+     OSArray* transducers;
+ } VoodooI2CMultitouchEvent;
+ 
++// Keep cross-kext metadata out of structure padding. V11 stored the typing
++// bit beside contact_count; a stale Interface object compiled against the
++// older layout zero-extended contact_count and silently discarded that byte.
++// An explicit argument changes the cross-kext Interface symbol, so a stale
++// boundary object fails to link instead of disabling palm rejection at run
++// time. Release builds still clean-recompile every dependent object.
++enum VoodooI2CMultitouchEventFlags {
++    kVoodooI2CMultitouchEventFlagNone = 0,
++    kVoodooI2CMultitouchEventFlagTypingActive = 1U << 0,
++};
++
+ typedef UInt32 MultitouchReturn;
+ 
+ #define MultitouchReturnContinue 0x0
+diff --git a/Multitouch Support/Native/VoodooI2CNativeEngine.cpp b/Multitouch Support/Native/VoodooI2CNativeEngine.cpp
+index 506a297..52b4e02 100644
+--- a/Multitouch Support/Native/VoodooI2CNativeEngine.cpp	
++++ b/Multitouch Support/Native/VoodooI2CNativeEngine.cpp	
+@@ -11,84 +11,672 @@
+ #define super VoodooI2CMultitouchEngine
+ OSDefineMetaClassAndStructors(VoodooI2CNativeEngine, VoodooI2CMultitouchEngine);
+ 
+-MultitouchReturn VoodooI2CNativeEngine::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
+-    if (!voodooInputInstance) {
+-        return MultitouchReturnContinue;
++static constexpr UInt64 kRazerPendingAdmissionNs = 32000000ULL;
++
++bool VoodooI2CNativeEngine::isPalmZone(UInt32 x, UInt32 y, UInt32 maxX, UInt32 maxY) const {
++    if (maxX == 0 || maxY == 0)
++        return false;
++
++    const UInt64 scaledX = static_cast<UInt64>(x) * 100U;
++    const UInt64 scaledY = static_cast<UInt64>(y) * 100U;
++    const UInt64 width = maxX;
++    const UInt64 height = maxY;
++
++    const bool inTopCorner =
++        scaledY <= height * palmTopZonePercent &&
++        (scaledX <= width * palmTopCornerZonePercent ||
++         scaledX >= width * (100U - palmTopCornerZonePercent));
++    const bool inFullHeightSideRail =
++        scaledX <= width * palmSideZonePercent ||
++        scaledX >= width * (100U - palmSideZonePercent);
++    const bool inLowerShoulder =
++        scaledY >= height * palmShoulderStartPercent &&
++        (scaledX <= width * palmShoulderZonePercent ||
++         scaledX >= width * (100U - palmShoulderZonePercent));
++
++    return inTopCorner || inFullHeightSideRail || inLowerShoulder;
++}
++
++bool VoodooI2CNativeEngine::hasTypingLockedContact() const {
++    for (UInt32 i = 0; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++) {
++        if (palmContacts[i].active && palmContacts[i].typingLockout)
++            return true;
+     }
++    return false;
++}
+ 
+-    message.timestamp = timestamp;
+-    message.contact_count = event.contact_count;
+-    memset(message.transducers, 0, VOODOO_INPUT_MAX_TRANSDUCERS * sizeof(VoodooInputTransducer));
+-    
+-    VoodooI2CDigitiserTransducer* firstTransducer = (VoodooI2CDigitiserTransducer*) event.transducers->getObject(0);
++bool VoodooI2CNativeEngine::hasRazerPendingContact() const {
++    for (UInt32 i = 0; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++) {
++        if (razerContacts[i].phase == kRazerContactPending)
++            return true;
++    }
++    return false;
++}
++
++bool VoodooI2CNativeEngine::hasRazerLockedContact() const {
++    for (UInt32 i = 0; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++) {
++        if (razerContacts[i].phase == kRazerContactLocked)
++            return true;
++    }
++    return false;
++}
++
++void VoodooI2CNativeEngine::resetRazerContactStates() {
++    memset(razerContacts, 0, sizeof(razerContacts));
++    razerFixedSlotCount = 0;
++}
++
++VoodooI2CNativeEngine::RazerContactDecision
++VoodooI2CNativeEngine::updateRazerContactState(
++    UInt32 slot,
++    VoodooI2CDigitiserTransducer* transducer,
++    bool typingActive,
++    UInt64 nowNs) {
++    RazerContactDecision decision;
++    if (!razerPrecisionTouchpad || !palmRejectionEnabled ||
++        !palmRejectionTypingLockout || slot >= VOODOO_INPUT_MAX_TRANSDUCERS)
++        return decision;
++
++    RazerContactState& state = razerContacts[slot];
++
++    // The typing signal is authoritative even when this particular slot is
++    // absent or marked invalid in the current HID frame. If macOS has already
++    // seen the contact, emit exactly one Stop and quarantine the generation.
++    if (typingActive && state.phase == kRazerContactAllowed) {
++        if (state.published) {
++            decision.emitStop = true;
++            decision.stopAsPalm = true;
++            decision.stopSecondaryId = state.secondaryId;
++            decision.stopX = state.lastX;
++            decision.stopY = state.lastY;
++        }
++        state.phase = kRazerContactLocked;
++        state.published = false;
++        allowedToLockedCount++;
++        suppressedContactCount++;
++    } else if (typingActive && state.phase == kRazerContactPending) {
++        state.phase = kRazerContactLocked;
++        pendingCapturedCount++;
++        suppressedContactCount++;
++    }
++
++    // Missing and DataValid=0 are not release events. In particular, never
++    // clear Locked here: the same slot must report a real TipSwitch 1 -> 0.
++    if (!transducer || !transducer->is_valid) {
++        decision.rejected = state.phase == kRazerContactPending ||
++                            state.phase == kRazerContactLocked;
++        return decision;
++    }
++
++    const bool tipDown = transducer->tip_switch.current.value != 0;
++
++    if (state.phase != kRazerContactEmpty && state.rawTipDown && !tipDown) {
++        if (!decision.emitStop && state.published) {
++            decision.emitStop = true;
++            decision.stopSecondaryId = state.secondaryId;
++            decision.stopX = state.lastX;
++            decision.stopY = state.lastY;
++        }
++        state.phase = kRazerContactEmpty;
++        state.rawTipDown = false;
++        state.published = false;
++        state.needsCleanStart = false;
++        state.pendingSinceNs = 0;
++        return decision;
++    }
++
++    if (!tipDown) {
++        // An idle slot remains Empty. A logically active state with no prior
++        // observed Down can only arise after lifecycle reset/corruption, so
++        // fail closed instead of manufacturing a new generation.
++        state.rawTipDown = false;
++        decision.rejected = state.phase == kRazerContactPending ||
++                            state.phase == kRazerContactLocked;
++        return decision;
++    }
++
++    // A new ContactIdentifier while the same descriptor slot remains TipDown
++    // is a physical generation boundary. Close the old published ID first;
++    // never overwrite it and accidentally continue an Allowed generation.
++    if (state.phase != kRazerContactEmpty && state.rawTipDown &&
++        transducer->secondary_id != state.secondaryId) {
++        if (!decision.emitStop && state.published) {
++            decision.emitStop = true;
++            decision.stopSecondaryId = state.secondaryId;
++            decision.stopX = state.lastX;
++            decision.stopY = state.lastY;
++        }
++        state.phase = kRazerContactEmpty;
++        state.rawTipDown = false;
++        state.published = false;
++        state.needsCleanStart = false;
++        state.pendingSinceNs = 0;
++    }
++
++    if (state.phase == kRazerContactEmpty) {
++        state.generation++;
++        state.rawTipDown = true;
++        state.published = false;
++        state.needsCleanStart = true;
++        state.secondaryId = transducer->secondary_id;
++        state.lastX = transducer->coordinates.x.current.value;
++        state.lastY = transducer->coordinates.y.current.value;
++        state.pendingSinceNs = nowNs;
++        if (typingActive) {
++            state.phase = kRazerContactLocked;
++            suppressedContactCount++;
++        } else {
++            state.phase = kRazerContactPending;
++            pendingAdmissionCount++;
++        }
++        decision.rejected = true;
++        return decision;
++    }
++
++    state.rawTipDown = true;
++    state.lastX = transducer->coordinates.x.current.value;
++    state.lastY = transducer->coordinates.y.current.value;
++
++    if (state.phase == kRazerContactPending) {
++        const UInt64 elapsedNs = nowNs >= state.pendingSinceNs
++            ? nowNs - state.pendingSinceNs
++            : 0;
++        if (elapsedNs >= kRazerPendingAdmissionNs) {
++            state.phase = kRazerContactAllowed;
++            state.pendingSinceNs = 0;
++            return decision;
++        }
++        decision.rejected = true;
++        return decision;
++    }
++
++    decision.rejected = state.phase == kRazerContactLocked;
++    return decision;
++}
++
++VoodooI2CNativeEngine::PalmContactState*
++VoodooI2CNativeEngine::findPalmState(UInt16 secondaryId, bool create) {
++    PalmContactState* freeState = nullptr;
++
++    for (UInt32 i = 0; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++) {
++        if (palmContacts[i].active && palmContacts[i].secondaryId == secondaryId)
++            return &palmContacts[i];
++        if (!palmContacts[i].active && !freeState)
++            freeState = &palmContacts[i];
++    }
++
++    if (!create || !freeState)
++        return nullptr;
++
++    freeState->active = true;
++    freeState->seen = false;
++    freeState->initialized = false;
++    freeState->rejected = false;
++    freeState->typingLockout = false;
++    freeState->hardwarePalm = false;
++    freeState->secondaryId = secondaryId;
++    freeState->originX = 0;
++    freeState->originY = 0;
++    return freeState;
++}
++
++bool VoodooI2CNativeEngine::updatePalmState(
++    VoodooI2CDigitiserTransducer* transducer,
++    bool typingActive) {
++    if (!palmRejectionEnabled || displayIntegrated || !transducer)
++        return false;
+ 
+-    if (!firstTransducer)
++    if (!transducer->is_valid) {
++        PalmContactState* invalidState = findPalmState(transducer->secondary_id, false);
++        if (invalidState) {
++            invalidState->active = false;
++            invalidState->initialized = false;
++            invalidState->rejected = false;
++            invalidState->typingLockout = false;
++            invalidState->hardwarePalm = false;
++        }
++        return false;
++    }
++
++    const bool touching = transducer->tip_switch.current.value != 0;
++    PalmContactState* state = findPalmState(transducer->secondary_id, touching);
++    if (!state)
++        return false;
++
++    state->seen = true;
++
++    if (!touching) {
++        state->active = false;
++        state->initialized = false;
++        state->rejected = false;
++        state->typingLockout = false;
++        state->hardwarePalm = false;
++        return false;
++    }
++
++    if (!state->initialized) {
++        state->initialized = true;
++        state->originX = transducer->coordinates.x.current.value;
++        state->originY = transducer->coordinates.y.current.value;
++    }
++
++    const bool wasRejected = state->rejected;
++
++    // This Synaptics CD73 exposes neither Digitizer Confidence nor contact
++    // Width/Height. A geometry-only classifier therefore cannot reliably tell
++    // an inward palm heel from a finger. Use the real keyboard pulse as the
++    // authoritative admission boundary: while typing, suppress every touch
++    // contact. New contacts outside that short window remain native, while a
++    // contact already captured by typing stays quarantined until real tip-up.
++    // Apply the same press-cycle rule to the mechanical click switch.
++    if (typingActive && palmRejectionTypingLockout) {
++        state->rejected = true;
++        state->typingLockout = true;
++    }
++
++    // Retain the generic fallback for other hardware or a configuration that
++    // explicitly disables deterministic typing lockout.
++    if (!state->rejected && typingActive &&
++        !transducer->confidence.value()) {
++        state->hardwarePalm = true;
++        state->rejected = true;
++    }
++
++    // The generic geometry fallback remains latched until tip-up. Checking the
++    // stored origin prevents an intentional central finger from being rejected
++    // merely for moving toward an edge. A contact captured by the deterministic
++    // typing lockout stays rejected until the device reports a real tip-up;
++    // ending the keyboard deadline must not synthesize a fresh contact under a
++    // resting palm.
++    if (!state->rejected && typingActive && palmRejectionFallback &&
++        transducer->logical_max_x > 0 && transducer->logical_max_y > 0 &&
++        isPalmZone(state->originX, state->originY,
++                   static_cast<UInt32>(transducer->logical_max_x),
++                   static_cast<UInt32>(transducer->logical_max_y))) {
++        state->rejected = true;
++    }
++
++    if (!wasRejected && state->rejected)
++        suppressedContactCount++;
++
++    return state->rejected;
++}
++
++void VoodooI2CNativeEngine::beginPalmFrame() {
++    for (UInt32 i = 0; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++)
++        palmContacts[i].seen = false;
++}
++
++void VoodooI2CNativeEngine::endPalmFrame() {
++    for (UInt32 i = 0; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++) {
++        if (palmContacts[i].active && !palmContacts[i].seen) {
++            palmContacts[i].active = false;
++            palmContacts[i].initialized = false;
++            palmContacts[i].rejected = false;
++            palmContacts[i].typingLockout = false;
++            palmContacts[i].hardwarePalm = false;
++            palmContacts[i].originX = 0;
++            palmContacts[i].originY = 0;
++        }
++    }
++}
++
++void VoodooI2CNativeEngine::publishPalmDiagnosticsIfNeeded() {
++    const bool publishTyping =
++        typingActiveFrameCount != publishedTypingActiveFrameCount &&
++        (publishedTypingActiveFrameCount == 0 ||
++         typingActiveFrameCount - publishedTypingActiveFrameCount >= 64);
++    const bool publishSuppressed =
++        suppressedContactCount != publishedSuppressedContactCount &&
++        (publishedSuppressedContactCount == 0 ||
++         suppressedContactCount - publishedSuppressedContactCount >= 64);
++    const bool publishSuppressedButton =
++        suppressedButtonCount != publishedSuppressedButtonCount &&
++        (publishedSuppressedButtonCount == 0 ||
++         suppressedButtonCount - publishedSuppressedButtonCount >= 64);
++    const bool publishPendingAdmission =
++        pendingAdmissionCount != publishedPendingAdmissionCount &&
++        (publishedPendingAdmissionCount == 0 ||
++         pendingAdmissionCount - publishedPendingAdmissionCount >= 64);
++    const bool publishPendingCaptured =
++        pendingCapturedCount != publishedPendingCapturedCount &&
++        (publishedPendingCapturedCount == 0 ||
++         pendingCapturedCount - publishedPendingCapturedCount >= 64);
++    const bool publishAllowedToLocked =
++        allowedToLockedCount != publishedAllowedToLockedCount &&
++        (publishedAllowedToLockedCount == 0 ||
++         allowedToLockedCount - publishedAllowedToLockedCount >= 64);
++
++    if (publishTyping) {
++        setProperty("PalmRejectionTypingActiveFrameCount",
++                    typingActiveFrameCount, 64);
++        publishedTypingActiveFrameCount = typingActiveFrameCount;
++    }
++    if (publishSuppressed) {
++        setProperty("PalmRejectionSuppressedContactCount",
++                    suppressedContactCount, 64);
++        publishedSuppressedContactCount = suppressedContactCount;
++    }
++    if (publishSuppressedButton) {
++        setProperty("PalmRejectionSuppressedButtonCount",
++                    suppressedButtonCount, 64);
++        publishedSuppressedButtonCount = suppressedButtonCount;
++    }
++    if (publishPendingAdmission) {
++        setProperty("PalmRejectionPendingAdmissionCount",
++                    pendingAdmissionCount, 64);
++        publishedPendingAdmissionCount = pendingAdmissionCount;
++    }
++    if (publishPendingCaptured) {
++        setProperty("PalmRejectionPendingCapturedCount",
++                    pendingCapturedCount, 64);
++        publishedPendingCapturedCount = pendingCapturedCount;
++    }
++    if (publishAllowedToLocked) {
++        setProperty("PalmRejectionAllowedToLockedCount",
++                    allowedToLockedCount, 64);
++        publishedAllowedToLockedCount = allowedToLockedCount;
++    }
++}
++
++IOService* VoodooI2CNativeEngine::retainVoodooInputClient() {
++    IOService* client = nullptr;
++    if (!clientLock)
++        return nullptr;
++
++    IOLockLock(clientLock);
++    if (voodooInputInstance) {
++        client = voodooInputInstance;
++        client->retain();
++    }
++    IOLockUnlock(clientLock);
++    return client;
++}
++
++MultitouchReturn VoodooI2CNativeEngine::handleInterruptReport(
++    VoodooI2CMultitouchEvent event,
++    AbsoluteTime timestamp,
++    UInt32 eventFlags) {
++    const bool typingActive =
++        (eventFlags & kVoodooI2CMultitouchEventFlagTypingActive) != 0;
++    if (!event.transducers) {
++        beginPalmFrame();
++        endPalmFrame();
+         return MultitouchReturnBreak;
+-    
+-    if (firstTransducer->type == kDigitiserTransducerStylus)
+-        stylus_check = 1;
++    }
++
++    const UInt32 availableTransducers = event.transducers->getCount();
++    if (availableTransducers == 0) {
++        beginPalmFrame();
++        endPalmFrame();
++        return MultitouchReturnBreak;
++    }
++
++    VoodooI2CDigitiserTransducer* firstTransducer =
++        OSDynamicCast(VoodooI2CDigitiserTransducer,
++                      event.transducers->getObject(0));
++    if (!firstTransducer) {
++        beginPalmFrame();
++        endPalmFrame();
++        return MultitouchReturnBreak;
++    }
++
++    // A stylus may occupy element zero without being included in the touch
++    // count. Recompute this on every frame, then clamp both the HID-provided
++    // count and the backing OSArray before indexing fixed VoodooInput storage.
++    stylus_check = firstTransducer->type == kDigitiserTransducerStylus ? 1 : 0;
++    const UInt32 fingerObjects = availableTransducers > stylus_check
++                                     ? availableTransducers - stylus_check
++                                     : 0;
++    const UInt32 safeContactCount = min(
++        static_cast<UInt32>(event.contact_count),
++        min(static_cast<UInt32>(VOODOO_INPUT_MAX_TRANSDUCERS), fingerObjects));
++
++    message.timestamp = timestamp;
++    memset(message.transducers, 0,
++           VOODOO_INPUT_MAX_TRANSDUCERS * sizeof(VoodooInputTransducer));
++
++    RazerContactDecision razerDecisions[VOODOO_INPUT_MAX_TRANSDUCERS] = {};
++    const UInt32 fixedSlotCount = min(
++        static_cast<UInt32>(VOODOO_INPUT_MAX_TRANSDUCERS), fingerObjects);
++
++    beginPalmFrame();
++
++    if (razerPrecisionTouchpad && palmRejectionEnabled &&
++        palmRejectionTypingLockout) {
++        if (fixedSlotCount > razerFixedSlotCount)
++            razerFixedSlotCount = fixedSlotCount;
++
++        AbsoluteTime nowAbsolute;
++        clock_get_uptime(&nowAbsolute);
++        UInt64 nowNs = 0;
++        absolutetime_to_nanoseconds(nowAbsolute, &nowNs);
++
++        // Scan the descriptor's fixed finger collections, not contact_count.
++        // A count shrink therefore cannot drop the state that quarantines a
++        // still-held palm in a higher physical slot.
++        for (UInt32 slot = 0; slot < razerFixedSlotCount; slot++) {
++            VoodooI2CDigitiserTransducer* transducer = slot < fixedSlotCount
++                ? OSDynamicCast(VoodooI2CDigitiserTransducer,
++                                event.transducers->getObject(
++                                    slot + stylus_check))
++                : nullptr;
++            razerDecisions[slot] = updateRazerContactState(
++                slot, transducer, typingActive, nowNs);
++        }
++
++        // A complete all-tips-up report clears every active slot through the
++        // same per-slot 1 -> 0 rule above. contact_count == 0 by itself, an
++        // omitted/invalid slot, and a button-only/null event never unlock it.
++    }
+ 
+     int valid_touch_count = 0;
+ 
+-    for (int i = 0; i < event.contact_count; i++) {
+-        VoodooI2CDigitiserTransducer* transducer = (VoodooI2CDigitiserTransducer*) event.transducers->getObject(i+stylus_check);
++    const bool physicalButtonDown =
++        !firstTransducer->has_secondary_button &&
++        firstTransducer->physical_button.value();
++    if (!physicalButtonDown)
++        quarantinePhysicalButtonUntilRelease = false;
++
++    // Pending is only a short deferral: once every contact matures to Allowed,
++    // a still-held raw Down becomes visible. Only typing or an already Locked
++    // contact quarantines the entire press cycle until physical Up.
++    const bool pendingDefersButton = razerPrecisionTouchpad &&
++        palmRejectionEnabled && palmRejectionTypingLockout &&
++        hasRazerPendingContact();
++    const bool quarantineButtonPress = razerPrecisionTouchpad &&
++        palmRejectionEnabled && palmRejectionTypingLockout &&
++        (typingActive || hasRazerLockedContact());
++    if (physicalButtonDown && razerPrecisionTouchpad &&
++        quarantineButtonPress &&
++        !quarantinePhysicalButtonUntilRelease) {
++        quarantinePhysicalButtonUntilRelease = true;
++        suppressedButtonCount++;
++    }
++    const bool publishedPhysicalButtonDown =
++        physicalButtonDown && !pendingDefersButton &&
++        !quarantinePhysicalButtonUntilRelease;
++
++    if (razerPrecisionTouchpad && palmRejectionEnabled && typingActive)
++        typingActiveFrameCount++;
++
++    UInt32 outputContactCount = safeContactCount;
++
++    for (UInt32 i = 0; i < safeContactCount; i++) {
++        VoodooI2CDigitiserTransducer* transducer =
++            OSDynamicCast(VoodooI2CDigitiserTransducer,
++                          event.transducers->getObject(i + stylus_check));
+         VoodooInputTransducer* inputTransducer = &message.transducers[i];
+-        
+-        if (!transducer) {
++
++        const bool forcedRazerStop =
++            razerPrecisionTouchpad && razerDecisions[i].emitStop;
++        const bool cleanRazerStart = razerPrecisionTouchpad &&
++            !forcedRazerStop && i < fixedSlotCount &&
++            razerContacts[i].phase == kRazerContactAllowed &&
++            razerContacts[i].needsCleanStart;
++        if (!transducer && !forcedRazerStop) {
+             continue;
+         }
+-        
++
+         inputTransducer->fingerType = (MT2FingerType) (kMT2FingerTypeIndexFinger + (i % 4));
+-        inputTransducer->secondaryId = transducer->secondary_id;
+-        
+-        inputTransducer->type = (transducer->type == DigitiserTransducerType::kDigitiserTransducerFinger) ? VoodooInputTransducerType::FINGER : VoodooInputTransducerType::STYLUS;
+-        
+-        inputTransducer->isValid = transducer->is_valid;
+-        if (inputTransducer->isValid) {
+-            valid_touch_count++;
+-        }
+-        
+-        if (!transducer->confidence.value()) {
++        inputTransducer->secondaryId = forcedRazerStop
++            ? razerDecisions[i].stopSecondaryId
++            : transducer->secondary_id;
++
++        inputTransducer->type = !transducer ||
++            transducer->type == DigitiserTransducerType::kDigitiserTransducerFinger
++                ? VoodooInputTransducerType::FINGER
++                : VoodooInputTransducerType::STYLUS;
++
++        inputTransducer->isValid = forcedRazerStop ||
++                                   (transducer && transducer->is_valid);
++
++        const bool rejectedPalm = razerPrecisionTouchpad
++            ? razerDecisions[i].rejected
++            : (!displayIntegrated && transducer &&
++               !transducer->confidence.value());
++
++        // Never classify the OLED touchscreen as a palm device. Confidence is
++        // used for palm rejection only on the physical touchpad.
++        if ((forcedRazerStop && razerDecisions[i].stopAsPalm) ||
++            (!forcedRazerStop && rejectedPalm)) {
+             inputTransducer->fingerType = kMT2FingerTypePalm;
+         }
+         
+-        inputTransducer->isTransducerActive = transducer->tip_switch.value();
+-        inputTransducer->isPhysicalButtonDown = !transducer->has_secondary_button && transducer->physical_button.value(); // if it has secondary button, then it will be passed as buttons on the "trackpoint" device
+-        
+-        inputTransducer->currentCoordinates.x = transducer->coordinates.x.value();
+-        inputTransducer->previousCoordinates.x = transducer->coordinates.x.last.value;
++        const bool rawTipDown = transducer && transducer->tip_switch.value();
++        const bool hardStop = razerPrecisionTouchpad
++            ? rejectedPalm
++            : rejectedPalm && palmRejectionHardStop;
++        inputTransducer->isTransducerActive = rawTipDown && !hardStop &&
++                                              !forcedRazerStop;
++        inputTransducer->isPhysicalButtonDown = publishedPhysicalButtonDown;
++
++        if (inputTransducer->isValid && inputTransducer->isTransducerActive &&
++            inputTransducer->fingerType != kMT2FingerTypePalm) {
++            valid_touch_count++;
++        }
+         
+-        inputTransducer->currentCoordinates.y = transducer->coordinates.y.value();
+-        inputTransducer->previousCoordinates.y = transducer->coordinates.y.last.value;
++        inputTransducer->currentCoordinates.x = forcedRazerStop
++            ? razerDecisions[i].stopX
++            : transducer->coordinates.x.value();
++        inputTransducer->previousCoordinates.x = forcedRazerStop
++            ? razerDecisions[i].stopX
++            : (cleanRazerStart
++                   ? transducer->coordinates.x.value()
++                   : transducer->coordinates.x.last.value);
++
++        inputTransducer->currentCoordinates.y = forcedRazerStop
++            ? razerDecisions[i].stopY
++            : transducer->coordinates.y.value();
++        inputTransducer->previousCoordinates.y = forcedRazerStop
++            ? razerDecisions[i].stopY
++            : (cleanRazerStart
++                   ? transducer->coordinates.y.value()
++                   : transducer->coordinates.y.last.value);
+         inputTransducer->supportsPressure = false;
+         inputTransducer->timestamp = timestamp;
+ 
+         // TODO: does VoodooI2C know width(s)? how does it measure pressure?
+-        inputTransducer->currentCoordinates.width = transducer->tip_pressure.value() / 2;
+-        inputTransducer->previousCoordinates.width = transducer->tip_pressure.last.value / 2;
++        inputTransducer->currentCoordinates.width = forcedRazerStop
++            ? 0
++            : transducer->tip_pressure.value() / 2;
++        inputTransducer->previousCoordinates.width = forcedRazerStop
++            ? 0
++            : (cleanRazerStart
++                   ? transducer->tip_pressure.value() / 2
++                   : transducer->tip_pressure.last.value / 2);
+ 
+-        inputTransducer->currentCoordinates.pressure = transducer->tip_pressure.value();
+-        inputTransducer->previousCoordinates.pressure = transducer->tip_pressure.last.value;
++        inputTransducer->currentCoordinates.pressure = forcedRazerStop
++            ? 0
++            : transducer->tip_pressure.value();
++        inputTransducer->previousCoordinates.pressure = forcedRazerStop
++            ? 0
++            : (cleanRazerStart
++                   ? transducer->tip_pressure.value()
++                   : transducer->tip_pressure.last.value);
+ 
+         // Force Touch emulation
+         // The button state is saved in the first transducer
+         // Disable Force Touch emulation for two-button trackpads
+-        if (!firstTransducer->has_secondary_button && firstTransducer->physical_button.value() && isForceClickEnabled()) {
++        if (!rejectedPalm && publishedPhysicalButtonDown &&
++            inputTransducer->isValid &&
++            inputTransducer->isTransducerActive &&
++            isForceClickEnabled()) {
+             inputTransducer->supportsPressure = true;
+             inputTransducer->isPhysicalButtonDown = false;
+             inputTransducer->currentCoordinates.pressure = 0xff;
+             inputTransducer->currentCoordinates.width = 10;
+         }
++
++        if (razerPrecisionTouchpad && i < fixedSlotCount) {
++            if (inputTransducer->isValid &&
++                inputTransducer->isTransducerActive &&
++                razerContacts[i].phase == kRazerContactAllowed) {
++                razerContacts[i].published = true;
++                razerContacts[i].needsCleanStart = false;
++            }
++            if (forcedRazerStop)
++                razerContacts[i].published = false;
++        }
++    }
++
++    // If contact_count shrank in the same frame that typing captured an
++    // already-published higher slot, append a synthetic Stop using the cached
++    // identity/coordinates. This does not admit a missing slot; it only closes
++    // a lifecycle macOS has already observed.
++    if (razerPrecisionTouchpad) {
++        for (UInt32 slot = safeContactCount;
++             slot < razerFixedSlotCount &&
++             outputContactCount < VOODOO_INPUT_MAX_TRANSDUCERS;
++             slot++) {
++            if (!razerDecisions[slot].emitStop)
++                continue;
++
++            VoodooInputTransducer* inputTransducer =
++                &message.transducers[outputContactCount++];
++            inputTransducer->fingerType = razerDecisions[slot].stopAsPalm
++                ? kMT2FingerTypePalm
++                : (MT2FingerType)(kMT2FingerTypeIndexFinger + (slot % 4));
++            inputTransducer->secondaryId =
++                razerDecisions[slot].stopSecondaryId;
++            inputTransducer->type = VoodooInputTransducerType::FINGER;
++            inputTransducer->isValid = true;
++            inputTransducer->isPhysicalButtonDown = publishedPhysicalButtonDown;
++            inputTransducer->isTransducerActive = false;
++            inputTransducer->supportsPressure = false;
++            inputTransducer->currentCoordinates.x = razerDecisions[slot].stopX;
++            inputTransducer->previousCoordinates.x = razerDecisions[slot].stopX;
++            inputTransducer->currentCoordinates.y = razerDecisions[slot].stopY;
++            inputTransducer->previousCoordinates.y = razerDecisions[slot].stopY;
++            inputTransducer->timestamp = timestamp;
++            razerContacts[slot].published = false;
++        }
+     }
++
++    endPalmFrame();
++
++    message.contact_count = static_cast<UInt8>(outputContactCount);
++
++    publishPalmDiagnosticsIfNeeded();
++
++    // Clickpads may report the mechanical switch with a zero contact count.
++    // VoodooInput reads the global button from slot zero independently of the
++    // finger loop, so preserve that button-only report.
++    if (outputContactCount == 0 && !firstTransducer->has_secondary_button)
++        message.transducers[0].isPhysicalButtonDown =
++            publishedPhysicalButtonDown;
+     
+     // set the thumb to improve 4F pinch and spread gesture and cross-screen dragging
+-    if (valid_touch_count >= 4 || firstTransducer->physical_button.value()) {
++    if (valid_touch_count >= 4 ||
++        (valid_touch_count > 0 && publishedPhysicalButtonDown)) {
+         // simple thumb detection: to find the lowest finger touch in the vertical direction.
+         UInt32 y_max = 0;
+-        int thumb_index = 0;
+-        for (int i = 0; i < event.contact_count; i++) {
++        UInt32 thumb_index = 0;
++        for (UInt32 i = 0; i < safeContactCount; i++) {
+             VoodooInputTransducer* inputTransducer = &message.transducers[i];
+-            if (inputTransducer->isValid && inputTransducer->currentCoordinates.y >= y_max) {
++            if (inputTransducer->isValid && inputTransducer->isTransducerActive &&
++                inputTransducer->fingerType != kMT2FingerTypePalm &&
++                inputTransducer->currentCoordinates.y >= y_max) {
+                 y_max = inputTransducer->currentCoordinates.y;
+                 thumb_index = i;
+             }
+@@ -96,26 +684,46 @@ MultitouchReturn VoodooI2CNativeEngine::handleInterruptReport(VoodooI2CMultitouc
+         message.transducers[thumb_index].fingerType = kMT2FingerTypeThumb;
+     }
+         
+-    super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &message, sizeof(VoodooInputEvent));
++    IOService* inputClient = retainVoodooInputClient();
++    if (!inputClient)
++        return MultitouchReturnContinue;
++
++    super::messageClient(kIOMessageVoodooInputMessage, inputClient,
++                         &message, sizeof(VoodooInputEvent));
+     
+     if (firstTransducer->has_secondary_button) {
+-        RelativePointerEvent event;
+-        event.dx = 0;
+-        event.dy = 0;
+-        event.buttons = firstTransducer->physical_button.value();
+-        event.timestamp = timestamp;
+-        super::messageClient(kIOMessageVoodooTrackpointRelativePointer, voodooInputInstance, &event, sizeof(event));
++        RelativePointerEvent pointerEvent;
++        pointerEvent.dx = 0;
++        pointerEvent.dy = 0;
++        pointerEvent.buttons = firstTransducer->physical_button.value();
++        pointerEvent.timestamp = timestamp;
++        super::messageClient(kIOMessageVoodooTrackpointRelativePointer,
++                             inputClient, &pointerEvent,
++                             sizeof(pointerEvent));
+     }
++    inputClient->release();
+     return MultitouchReturnBreak;
+ }
+ 
+ bool VoodooI2CNativeEngine::start(IOService* provider) {
+-    if (!super::start(provider))
++    clientLock = IOLockAlloc();
++    if (!clientLock)
++        return false;
++
++    if (!super::start(provider)) {
++        IOLockFree(clientLock);
++        clientLock = nullptr;
+         return false;
++    }
+ 
+     parentProvider = OSDynamicCast(VoodooI2CMultitouchInterface, provider);
+     
+     if (!parentProvider) {
++        // super::start() succeeded, so IOKit requires the matching stop even
++        // on this normally unreachable provider-type failure path.
++        super::stop(provider);
++        IOLockFree(clientLock);
++        clientLock = nullptr;
+         return false;
+     }
+     
+@@ -127,7 +735,110 @@ bool VoodooI2CNativeEngine::start(IOService* provider) {
+     setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, parentProvider->physical_max_x, 32);
+     setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, parentProvider->physical_max_y, 32);
+ 
+-    setProperty("VoodooInputSupported", kOSBooleanTrue);
++    UInt32 providerVendorID = 0;
++    UInt32 providerProductID = 0;
++    if (OSNumber* vendorID = OSDynamicCast(OSNumber, parentProvider->getProperty(kIOHIDVendorIDKey))) {
++        providerVendorID = vendorID->unsigned32BitValue();
++        setProperty(VOODOO_INPUT_VENDOR_ID_KEY, vendorID);
++    }
++    if (OSNumber* productID = OSDynamicCast(OSNumber, parentProvider->getProperty(kIOHIDProductIDKey))) {
++        providerProductID = productID->unsigned32BitValue();
++        setProperty(VOODOO_INPUT_PRODUCT_ID_KEY, productID);
++    }
++
++    if (OSBoolean* integrated = OSDynamicCast(OSBoolean, parentProvider->getProperty("DisplayIntegrated"))) {
++        displayIntegrated = integrated->getValue();
++    }
++    // The HID satellite publishes its interface before parseElements() can
++    // upgrade DisplayIntegrated. Pin the known internal ELAN identity here so
++    // registration timing can never expose it to touchpad palm policy.
++    const bool razerOledTouchscreen =
++        providerVendorID == 0x04F3 && providerProductID == 0x2A38;
++    if (razerOledTouchscreen)
++        displayIntegrated = true;
++    razerPrecisionTouchpad = providerVendorID == 0x06CB &&
++                             providerProductID == 0xCD73 &&
++                             !displayIntegrated;
++    resetRazerContactStates();
++    setProperty(VOODOO_INPUT_DISPLAY_INTEGRATED_KEY,
++                displayIntegrated ? kOSBooleanTrue : kOSBooleanFalse);
++
++    if (OSBoolean* value = OSDynamicCast(OSBoolean, getProperty("PalmRejectionEnabled")))
++        palmRejectionEnabled = value->getValue();
++    if (OSBoolean* value = OSDynamicCast(OSBoolean, getProperty("PalmRejectionHardStop")))
++        palmRejectionHardStop = value->getValue();
++    if (OSBoolean* value = OSDynamicCast(OSBoolean, getProperty("PalmRejectionFallback")))
++        palmRejectionFallback = value->getValue();
++    if (OSBoolean* value = OSDynamicCast(OSBoolean, getProperty("PalmRejectionTypingLockout")))
++        palmRejectionTypingLockout = value->getValue();
++    if (OSNumber* value = OSDynamicCast(OSNumber, getProperty("PalmRejectionTopZonePercent")))
++        palmTopZonePercent = min(value->unsigned32BitValue(), 20U);
++    if (OSNumber* value = OSDynamicCast(OSNumber, getProperty("PalmRejectionTopCornerZonePercent")))
++        palmTopCornerZonePercent = min(value->unsigned32BitValue(), 30U);
++    if (OSNumber* value = OSDynamicCast(OSNumber, getProperty("PalmRejectionSideZonePercent")))
++        palmSideZonePercent = min(value->unsigned32BitValue(), 40U);
++    if (OSNumber* value = OSDynamicCast(OSNumber, getProperty("PalmRejectionShoulderZonePercent")))
++        palmShoulderZonePercent = min(value->unsigned32BitValue(), 45U);
++    if (OSNumber* value = OSDynamicCast(OSNumber, getProperty("PalmRejectionShoulderStartPercent")))
++        palmShoulderStartPercent = min(max(value->unsigned32BitValue(), 20U), 70U);
++    setProperty("PalmRejectionApplies",
++                displayIntegrated
++                    ? "Touchscreen excluded"
++                    : (razerPrecisionTouchpad
++                           ? "Exact Synaptics 06CB:CD73 touchpad only"
++                           : "Generic confidence only; no Razer typing policy"));
++    setProperty("PalmRejectionMode",
++                razerPrecisionTouchpad
++                    ? "Per-fixed-slot Empty/Pending/Allowed/Locked admission"
++                    : "Razer typing state machine bypassed");
++    setProperty("PalmRejectionTypingOnly", kOSBooleanTrue);
++    setProperty("PalmRejectionTypingSignal",
++                "GUI HIDSystem key-down counter pulse; kernel timestamp");
++    setProperty("PalmRejectionMinimumContacts", 1U, 32);
++    setProperty("PalmRejectionPendingAdmissionMs", 32U, 32);
++    setProperty("PalmRejectionSlotPolicy",
++                "Fixed HID collection slot plus physical generation");
++    setProperty("PalmRejectionTypingLockout",
++                palmRejectionTypingLockout ? kOSBooleanTrue : kOSBooleanFalse);
++    setProperty("PalmRejectionTopZonePercent", palmTopZonePercent, 32);
++    setProperty("PalmRejectionTopCornerZonePercent", palmTopCornerZonePercent, 32);
++    setProperty("PalmRejectionSideZonePercent", palmSideZonePercent, 32);
++    setProperty("PalmRejectionShoulderZonePercent", palmShoulderZonePercent, 32);
++    setProperty("PalmRejectionShoulderStartPercent", palmShoulderStartPercent, 32);
++    setProperty("PalmRejectionUnlockMode",
++                "Locked clears only on same-slot TipSwitch 1-to-0 or complete all-tips-up");
++    setProperty("PalmRejectionHardStopScope",
++                "CD73 Pending/Locked withheld; Allowed-to-Locked emits Stop/Palm");
++    setProperty("PalmRejectionEventFlagsABI",
++                "Explicit UInt32 flags v2; ABI unchanged from V12");
++    setProperty("PalmRejectionTypingActiveFrameCount",
++                static_cast<UInt64>(0), 64);
++    setProperty("PalmRejectionSuppressedContactCount",
++                static_cast<UInt64>(0), 64);
++    setProperty("PalmRejectionSuppressedButtonCount",
++                static_cast<UInt64>(0), 64);
++    setProperty("PalmRejectionPendingAdmissionCount",
++                static_cast<UInt64>(0), 64);
++    setProperty("PalmRejectionPendingCapturedCount",
++                static_cast<UInt64>(0), 64);
++    setProperty("PalmRejectionAllowedToLockedCount",
++                static_cast<UInt64>(0), 64);
++    setProperty("PalmRejectionPhysicalButtonPolicy",
++                "Pending Down deferred; typing/Locked press quarantined until hardware Up");
++    setProperty("RazerHIDPatchVersion", "13.0");
++
++    // Preserve the V12 dual-MT2 identity and synchronized simulator teardown
++    // for the known OLED touchscreen. V13 changes only the exact CD73 palm
++    // admission policy; the 1000 Hz USB touchscreen path remains untouched.
++    const bool supportsVoodooInput = !displayIntegrated || razerOledTouchscreen;
++    setProperty("VoodooInputSupported",
++                supportsVoodooInput ? kOSBooleanTrue : kOSBooleanFalse);
++    if (displayIntegrated) {
++        setProperty("TouchscreenMultitouchMode",
++                    razerOledTouchscreen
++                        ? "Native MT2 gestures with synchronized teardown"
++                        : "Sleep-safe direct HID path");
++    }
+     
+     stylus_check = 0;
+ 
+@@ -189,9 +900,12 @@ bool VoodooI2CNativeEngine::isForceClickEnabled() {
+ }
+ 
+ void VoodooI2CNativeEngine::onPropertyChange() {
+-    if (voodooInputInstance) {
+-        super::messageClient(kIOMessageVoodooInputUpdatePropertiesNotification, voodooInputInstance);
+-    }
++    IOService* inputClient = retainVoodooInputClient();
++    if (!inputClient)
++        return;
++    super::messageClient(kIOMessageVoodooInputUpdatePropertiesNotification,
++                         inputClient);
++    inputClient->release();
+ }
+ 
+ void VoodooI2CNativeEngine::stop(IOService* provider) {
+@@ -200,8 +914,18 @@ void VoodooI2CNativeEngine::stop(IOService* provider) {
+ 
+ bool VoodooI2CNativeEngine::handleOpen(IOService *forClient, IOOptionBits options, void *arg) {
+     if (forClient && forClient->getProperty(VOODOO_INPUT_IDENTIFIER)) {
++        beginPalmFrame();
++        endPalmFrame();
++        resetRazerContactStates();
++        quarantinePhysicalButtonUntilRelease = false;
++        IOLockLock(clientLock);
++        if (voodooInputInstance) {
++            IOLockUnlock(clientLock);
++            return false;
++        }
+         voodooInputInstance = forClient;
+         voodooInputInstance->retain();
++        IOLockUnlock(clientLock);
+         
+         return true;
+     }
+@@ -209,13 +933,48 @@ bool VoodooI2CNativeEngine::handleOpen(IOService *forClient, IOOptionBits option
+ }
+ 
+ bool VoodooI2CNativeEngine::handleIsOpen(const IOService *forClient) const {
+-    return voodooInputInstance != nullptr && forClient == voodooInputInstance;
++    if (!clientLock)
++        return false;
++    IOLockLock(clientLock);
++    const bool open = voodooInputInstance != nullptr &&
++                      forClient == voodooInputInstance;
++    IOLockUnlock(clientLock);
++    return open;
+ }
+ 
+ void VoodooI2CNativeEngine::handleClose(IOService *forClient, IOOptionBits options) {
+-    if (voodooInputInstance && forClient == voodooInputInstance) {
+-        OSSafeReleaseNULL(voodooInputInstance);
++    IOService* clientToRelease = nullptr;
++    if (clientLock) {
++        IOLockLock(clientLock);
++        if (voodooInputInstance && forClient == voodooInputInstance) {
++            clientToRelease = voodooInputInstance;
++            voodooInputInstance = nullptr;
++        }
++        IOLockUnlock(clientLock);
++    }
++    if (clientToRelease) {
++        clientToRelease->release();
++        beginPalmFrame();
++        endPalmFrame();
++        resetRazerContactStates();
++        quarantinePhysicalButtonUntilRelease = false;
++    }
++}
++
++void VoodooI2CNativeEngine::free() {
++    IOService* clientToRelease = nullptr;
++    if (clientLock) {
++        IOLockLock(clientLock);
++        clientToRelease = voodooInputInstance;
++        voodooInputInstance = nullptr;
++        IOLockUnlock(clientLock);
++    }
++    OSSafeReleaseNULL(clientToRelease);
++    if (clientLock) {
++        IOLockFree(clientLock);
++        clientLock = nullptr;
+     }
++    super::free();
+ }
+ 
+ bool VoodooI2CNativeEngine::willTerminate(IOService *provider, IOOptionBits options) {
+diff --git a/Multitouch Support/Native/VoodooI2CNativeEngine.hpp b/Multitouch Support/Native/VoodooI2CNativeEngine.hpp
+index a0fbadc..62b277d 100644
+--- a/Multitouch Support/Native/VoodooI2CNativeEngine.hpp	
++++ b/Multitouch Support/Native/VoodooI2CNativeEngine.hpp	
+@@ -10,6 +10,7 @@
+ #define VoodooI2CNativeEngine_hpp
+ 
+ #include <IOKit/IOLib.h>
++#include <IOKit/IOLocks.h>
+ #include <IOKit/IOKitKeys.h>
+ #include <IOKit/IOService.h>
+ 
+@@ -24,16 +25,109 @@ class EXPORT VoodooI2CNativeEngine : public VoodooI2CMultitouchEngine {
+     OSDeclareDefaultStructors(VoodooI2CNativeEngine);
+     
+     VoodooInputEvent message;
+-    VoodooI2CMultitouchInterface* parentProvider;
+-    IOService* voodooInputInstance;
++    VoodooI2CMultitouchInterface* parentProvider = nullptr;
++    IOService* voodooInputInstance = nullptr;
+ 
+     bool lastIsForceClickEnabled = false;
+     AbsoluteTime lastForceClickPropertyUpdateTime;
+ 
++    bool displayIntegrated = false;
++    bool palmRejectionEnabled = true;
++    bool palmRejectionHardStop = true;
++    bool palmRejectionFallback = true;
++    bool palmRejectionTypingLockout = true;
++    bool razerPrecisionTouchpad = false;
++    // Generic fallback zones for hardware that explicitly disables the
++    // deterministic typing lockout. The Razer CD73 has no Confidence or
++    // Width/Height usages, so its default policy uses the keyboard deadline.
++    UInt32 palmTopZonePercent = 8;
++    UInt32 palmTopCornerZonePercent = 18;
++    UInt32 palmSideZonePercent = 12;
++    UInt32 palmShoulderZonePercent = 25;
++    UInt32 palmShoulderStartPercent = 55;
++
++    struct PalmContactState {
++        bool active = false;
++        bool seen = false;
++        bool initialized = false;
++        bool rejected = false;
++        bool typingLockout = false;
++        bool hardwarePalm = false;
++        UInt16 secondaryId = 0;
++        UInt32 originX = 0;
++        UInt32 originY = 0;
++    } palmContacts[VOODOO_INPUT_MAX_TRANSDUCERS];
++
++    enum RazerContactPhase : UInt8 {
++        kRazerContactEmpty = 0,
++        kRazerContactPending,
++        kRazerContactAllowed,
++        kRazerContactLocked,
++    };
++
++    // The CD73 report descriptor exposes a stable array of finger
++    // collections. Track admission by that physical collection slot instead
++    // of by ContactIdentifier: an omitted/invalid frame or a reused ID must
++    // never turn a typing-captured palm into a fresh finger.
++    struct RazerContactState {
++        RazerContactPhase phase = kRazerContactEmpty;
++        bool rawTipDown = false;
++        bool published = false;
++        bool needsCleanStart = false;
++        UInt16 secondaryId = 0;
++        UInt32 generation = 0;
++        UInt32 lastX = 0;
++        UInt32 lastY = 0;
++        UInt64 pendingSinceNs = 0;
++    } razerContacts[VOODOO_INPUT_MAX_TRANSDUCERS];
++
++    struct RazerContactDecision {
++        bool rejected = false;
++        bool emitStop = false;
++        bool stopAsPalm = false;
++        UInt16 stopSecondaryId = 0;
++        UInt32 stopX = 0;
++        UInt32 stopY = 0;
++    };
++    UInt32 razerFixedSlotCount = 0;
++
++    UInt64 typingActiveFrameCount = 0;
++    UInt64 suppressedContactCount = 0;
++    UInt64 suppressedButtonCount = 0;
++    UInt64 pendingAdmissionCount = 0;
++    UInt64 pendingCapturedCount = 0;
++    UInt64 allowedToLockedCount = 0;
++    UInt64 publishedTypingActiveFrameCount = 0;
++    UInt64 publishedSuppressedContactCount = 0;
++    UInt64 publishedSuppressedButtonCount = 0;
++    UInt64 publishedPendingAdmissionCount = 0;
++    UInt64 publishedPendingCapturedCount = 0;
++    UInt64 publishedAllowedToLockedCount = 0;
++    bool quarantinePhysicalButtonUntilRelease = false;
++    IOLock* clientLock = nullptr;
++
+     bool isForceClickEnabled();
++    bool isPalmZone(UInt32 x, UInt32 y, UInt32 maxX, UInt32 maxY) const;
++    bool hasTypingLockedContact() const;
++    bool hasRazerPendingContact() const;
++    bool hasRazerLockedContact() const;
++    PalmContactState* findPalmState(UInt16 secondaryId, bool create);
++    bool updatePalmState(VoodooI2CDigitiserTransducer* transducer,
++                         bool typingActive);
++    RazerContactDecision updateRazerContactState(
++        UInt32 slot,
++        VoodooI2CDigitiserTransducer* transducer,
++        bool typingActive,
++        UInt64 nowNs);
++    void resetRazerContactStates();
++    void beginPalmFrame();
++    void endPalmFrame();
++    void publishPalmDiagnosticsIfNeeded();
++    IOService* retainVoodooInputClient();
+  public:
+     bool start(IOService* provider) override;
+     void stop(IOService* provider) override;
++    void free() override;
+     
+     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
+     bool handleIsOpen(const IOService *forClient) const override;
+@@ -41,9 +135,12 @@ class EXPORT VoodooI2CNativeEngine : public VoodooI2CMultitouchEngine {
+     void onPropertyChange() override;
+     bool willTerminate(IOService* provider, IOOptionBits options) override;
+     
+-    MultitouchReturn handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp);
++    MultitouchReturn handleInterruptReport(
++        VoodooI2CMultitouchEvent event,
++        AbsoluteTime timestamp,
++        UInt32 eventFlags) override;
+  private:
+-    int stylus_check = 0;
++    UInt32 stylus_check = 0;
+ };
+ 
+ 
+diff --git a/Multitouch Support/VoodooI2CMultitouchEngine.cpp b/Multitouch Support/VoodooI2CMultitouchEngine.cpp
+index 28be736..ce737e9 100644
+--- a/Multitouch Support/VoodooI2CMultitouchEngine.cpp	
++++ b/Multitouch Support/VoodooI2CMultitouchEngine.cpp	
+@@ -16,7 +16,12 @@ UInt8 VoodooI2CMultitouchEngine::getScore() {
+     return 0x0;
+ }
+ 
+-MultitouchReturn VoodooI2CMultitouchEngine::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
++MultitouchReturn VoodooI2CMultitouchEngine::handleInterruptReport(
++    VoodooI2CMultitouchEvent event,
++    AbsoluteTime timestamp,
++    UInt32 eventFlags) {
++    (void)timestamp;
++    (void)eventFlags;
+     if (event.contact_count)
+         IOLog("Contact Count: %d\n", event.contact_count);
+     
+diff --git a/Multitouch Support/VoodooI2CMultitouchEngine.hpp b/Multitouch Support/VoodooI2CMultitouchEngine.hpp
+index a467d5b..21e0588 100644
+--- a/Multitouch Support/VoodooI2CMultitouchEngine.hpp	
++++ b/Multitouch Support/VoodooI2CMultitouchEngine.hpp	
+@@ -39,7 +39,10 @@ class EXPORT VoodooI2CMultitouchEngine : public IOService {
+      * @return *MultitouchContinue* if the next engine in line should also be allowed to process the event, *MultitouchBreak* if this is the last engine that should be allowed to process the event
+      */
+ 
+-    virtual MultitouchReturn handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp);
++    virtual MultitouchReturn handleInterruptReport(
++        VoodooI2CMultitouchEvent event,
++        AbsoluteTime timestamp,
++        UInt32 eventFlags);
+ 
+     bool willTerminate(IOService* provider, IOOptionBits options) override;
+ 
+diff --git a/Multitouch Support/VoodooI2CMultitouchInterface.cpp b/Multitouch Support/VoodooI2CMultitouchInterface.cpp
+index f0e2de0..73c1e88 100644
+--- a/Multitouch Support/VoodooI2CMultitouchInterface.cpp	
++++ b/Multitouch Support/VoodooI2CMultitouchInterface.cpp	
+@@ -12,7 +12,10 @@
+ #define super IOService
+ OSDefineMetaClassAndStructors(VoodooI2CMultitouchInterface, IOService);
+ 
+-void VoodooI2CMultitouchInterface::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
++void VoodooI2CMultitouchInterface::handleInterruptReport(
++    VoodooI2CMultitouchEvent event,
++    AbsoluteTime timestamp,
++    UInt32 eventFlags) {
+     int i, count;
+     VoodooI2CMultitouchEngine* engine;
+ 
+@@ -21,7 +24,8 @@ void VoodooI2CMultitouchInterface::handleInterruptReport(VoodooI2CMultitouchEven
+         if (!engine)
+             continue;
+ 
+-        if (engine->handleInterruptReport(event, timestamp) == MultitouchReturnBreak)
++        if (engine->handleInterruptReport(event, timestamp, eventFlags) ==
++            MultitouchReturnBreak)
+             break;
+     }
+ }
+diff --git a/Multitouch Support/VoodooI2CMultitouchInterface.hpp b/Multitouch Support/VoodooI2CMultitouchInterface.hpp
+index c734287..a2aed5c 100644
+--- a/Multitouch Support/VoodooI2CMultitouchInterface.hpp	
++++ b/Multitouch Support/VoodooI2CMultitouchInterface.hpp	
+@@ -56,7 +56,9 @@ class EXPORT VoodooI2CMultitouchInterface : public IOService {
+      * Multitouch engines with a higher <VoodooI2CMultitouchEngine::getScore` are given higher priority.
+      */
+ 
+-    void handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp);
++    void handleInterruptReport(VoodooI2CMultitouchEvent event,
++                               AbsoluteTime timestamp,
++                               UInt32 eventFlags);
+ 
+     /* Controls the open behavior of <VoodooI2CMultitouchInterface>
+      * @forClient An instance of <VoodooI2CMultitouchEngine> that wishes to be a client
+diff --git a/VoodooI2C/VoodooI2C/Info.plist b/VoodooI2C/VoodooI2C/Info.plist
+index 3d2899a..35c7a60 100644
+--- a/VoodooI2C/VoodooI2C/Info.plist
++++ b/VoodooI2C/VoodooI2C/Info.plist
+@@ -472,6 +472,26 @@
+ 			<string>VoodooI2CNativeEngine</string>
+ 			<key>IOProviderClass</key>
+ 			<string>VoodooI2CMultitouchInterface</string>
++			<key>PalmRejectionEnabled</key>
++			<true/>
++			<key>PalmRejectionHardStop</key>
++			<true/>
++			<key>PalmRejectionFallback</key>
++			<true/>
++			<key>PalmRejectionTypingLockout</key>
++			<true/>
++			<key>PalmRejectionTopZonePercent</key>
++			<integer>8</integer>
++			<key>PalmRejectionTopCornerZonePercent</key>
++			<integer>18</integer>
++			<key>PalmRejectionSideZonePercent</key>
++			<integer>12</integer>
++			<key>PalmRejectionShoulderZonePercent</key>
++			<integer>25</integer>
++			<key>PalmRejectionShoulderStartPercent</key>
++			<integer>55</integer>
++			<key>PalmRejectionMinimumContacts</key>
++			<integer>1</integer>
+ 		</dict>
+ 		<key>VoodooI2CACPIController</key>
+ 		<dict>

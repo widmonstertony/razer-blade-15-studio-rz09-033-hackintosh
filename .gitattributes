@@ -7,6 +7,11 @@
 *.plist text eol=lf
 *.dsl text eol=lf
 *.hex text eol=lf
+*.c text eol=lf
+*.cpp text eol=lf
+*.hpp text eol=lf
+*.sh text eol=lf
+*.patch text eol=lf whitespace=-trailing-space,-space-before-tab
 **/CodeResources text eol=lf
 .contentFlavour text eol=lf
 .contentVisibility text eol=lf

@@ -1,6 +1,6 @@
 # ACPI inventory
 
-| Table | Baseline | Purpose inferred from table/source |
+| Table | V61-P1 state | Purpose inferred from table/source |
 | --- | --- | --- |
 | SSDT-BATT.aml | Enabled | Battery field/EC compatibility |
 | SSDT-AWAC.aml | Enabled | AWAC/RTC compatibility |
@@ -18,4 +18,4 @@
 | SSDT-SLPWAK.aml | Disabled | Wraps firmware `_WAK` and notifies lid devices after S3 wake |
 | SSDT-TB3HP.aml | Enabled | Thunderbolt hot-plug tree for `RP13` |
 
-The matching baseline ACPI rename for `SSDT-SLPWAK.aml` (`_WAK` → `ZWAK`) is also disabled. Both pieces must be enabled together for the wrapper to call the original firmware method.
+The matching ACPI rename for `SSDT-SLPWAK.aml` (`_WAK` → `ZWAK`) is also disabled. Earlier experiments used the wrapper, but the final V61-P1 result uses the kext's power notifications and keeps both the table and rename disabled. If auditing the old experiment, the table and rename must always be toggled together.

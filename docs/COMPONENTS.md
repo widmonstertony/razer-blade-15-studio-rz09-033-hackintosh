@@ -1,16 +1,18 @@
-# Component inventory
+# V61-P1 component inventory
 
-Versions are read from the captured EFI. “Enabled” refers to the top-level OpenCore kernel entry; plug-in entries may have their own state.
+Versions below describe the sanitized public V61-P1 tree. “Enabled” refers to the top-level OpenCore entry; plug-ins have their own ordered entries.
 
-| Component | Version | Baseline state |
+| Component | Version | V61-P1 state |
 | --- | ---: | --- |
+| OpenCore | 1.0.7 | Enabled |
+| RazerOLEDWakeFix.kext | 4.5.0 / V61 | Enabled only on Darwin 25.2.x |
 | AMFIPass.kext | 1.4.1 | Disabled |
-| AppleALC.kext | 1.9.5 | Enabled |
+| AppleALC.kext | 1.9.7 | Enabled |
 | CPUFriend.kext | 1.3.0 | Enabled |
 | CPUFriendDataProvider.kext | 1.0.1 | Enabled |
 | CpuTscSync.kext | 1.1.2 | Present, not referenced |
 | HibernationFixup.kext | 1.5.4 | Present, not referenced |
-| Lilu.kext | 1.7.1 | Enabled |
+| Lilu.kext | 1.7.2 | Enabled |
 | NoTouchID.kext | 1.0.3 | Enabled |
 | RealtekCardReader.kext | 0.9.7 | Enabled |
 | RealtekCardReaderFriend.kext | 1.0.4 | Enabled |
@@ -21,14 +23,14 @@ Versions are read from the captured EFI. “Enabled” refers to the top-level O
 | USBPorts.kext | 1.0 | Enabled |
 | VerbStub.kext | 1.0.3 | Enabled |
 | VirtualSMC.kext | 1.3.7 | Enabled |
-| VoodooI2C.kext | 2.9.1 | Enabled |
-| VoodooI2CHID.kext | 1.0 | Enabled |
-| VoodooPS2Controller.kext | 2.3.6 | Enabled |
+| VoodooI2C.kext | 2.9.1 + HID V12 | Enabled |
+| VoodooI2CHID.kext | 1.0 + HID V12 | Enabled |
+| VoodooPS2Controller.kext | 2.3.7 | Controller and keyboard enabled |
 | WhateverGreen.kext | 1.7.0 | Enabled |
 
 ## Apple-derived components omitted from Git
 
-| Referenced component | Baseline state | Public repository |
+| Referenced component | Config state | Public repository |
 | --- | --- | --- |
 | IOSkywalkFamily.kext | Enabled for Darwin 23+ | Omitted |
 | IO80211FamilyLegacy.kext | Enabled for Darwin 23+ | Omitted |
@@ -36,6 +38,11 @@ Versions are read from the captured EFI. “Enabled” refers to the top-level O
 | HfsPlus.efi | Enabled | Omitted |
 | apfs_aligned.efi | Enabled | Omitted |
 
-## OpenCore note
+## User-space wake components
 
-The captured `OpenCore.efi` is dated 2025-11-18 and the configuration validates with `ocvalidate` 1.0.6. Its binary hash is not byte-identical to the official 1.0.6 release binary, so it may be a nightly or custom build. This repository preserves that fact instead of claiming an exact official release match.
+| Component | Behavior |
+| --- | --- |
+| OLEDWakeRescueAgent | Aqua LaunchAgent; event-driven IOKit wake listener; eight-second delay |
+| DisplayModeNudgeV2 | Exact Samsung/mode gate; app-only 1600×900 HiDPI transaction and exact restore |
+
+Both tested executables are x86_64 and ad-hoc signed. Source and build scripts are under `Tools/OLEDWakeRescue`.
