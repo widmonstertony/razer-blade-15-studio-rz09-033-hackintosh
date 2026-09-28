@@ -2,14 +2,14 @@
 
 [简体中文](THERMALS.zh-CN.md)
 
-macOS is not automatically cooler or quieter on a Razer laptop. Apple tunes fan curves, CPU power limits and display power for Apple hardware. This Blade uses a Razer embedded controller (EC), a disabled NVIDIA dGPU, an Intel iGPU driving a 4K 10-bit OLED, and non-native ACPI/SMC reporting.
+macOS is not automatically cooler or quieter on a Razer laptop. Apple tunes fan curves, CPU power limits and display power for Apple hardware. This Blade uses a Razer embedded controller (EC), a disabled NVIDIA dGPU, an Intel iGPU driving a 4K OLED panel, and non-native ACPI/SMC reporting.
 
 ## Evidence from the validated machine
 
 A read-only sample on 2026-08-24 found:
 
 - only Intel UHD 630 was exposed as an active display GPU; NVIDIA was absent from `system_profiler SPDisplaysDataType`;
-- the screen was using the required 10-bit path and a large HiDPI backing surface;
+- the screen was using a large HiDPI backing surface;
 - `WindowServer` briefly used about 32% CPU;
 - active Codex renderer/service work and Continuity Capture also contributed load;
 - a later two-sample reading was about 89% CPU idle, so the CPU was not stuck at full load;
@@ -19,18 +19,18 @@ A read-only sample on 2026-08-24 found:
 
 This points first to display composition and current applications, not proof of failed CPU power management. Temperature still needs a 10-minute idle comparison because a one-second process snapshot cannot prove the long-term cause.
 
-## Why 4K 10-bit HiDPI is warm
+## Why scaled 4K HiDPI is warm
 
-At “looks like 1680×945,” macOS renders a 3360×1890 backing surface and composites it for the 3840×2160 panel. The 30-bit framebuffer moves more data than an 8-bit path. Window transparency, video, browser animation and BetterDisplay can keep the iGPU/display engine busy. The OLED panel also consumes more power on bright content.
+At “looks like 1680×945,” macOS renders a 3360×1890 backing surface and composites it for the 3840×2160 panel. Window transparency, video, browser animation and BetterDisplay can keep the iGPU/display engine busy. The OLED panel also consumes more power on bright content.
 
-V61-P1 keeps 10-bit output by design. Reducing heat does not require changing to 8-bit.
+P5/R4 wake is usable with a 24-bit `ARGB8888` framebuffer. BetterDisplay 4.3.5 can separately make the active framebuffer report 30-bit `ARGB2101010`, as verified in the current user session. That extra display processing may affect WindowServer/iGPU load, so compare temperatures at the same mode and color-depth setting; do not treat 10-bit as a thermal fix.
 
 ## Safe optimization order
 
 1. Let the machine sit untouched for ten minutes, then check Activity Monitor's CPU and Energy tabs.
 2. Temporarily quit BetterDisplay and compare `WindowServer` usage and temperature for five minutes. Keep the 1680×945 HiDPI mode during the comparison.
 3. Close heavy browser/video/Codex workloads and disable Continuity Camera when it is not being used.
-4. Use Dark Mode and lower rendered brightness; dark OLED content reduces panel power without changing 10-bit framebuffer depth.
+4. Use Dark Mode and lower rendered brightness; dark OLED content reduces panel power without changing EFI display patches.
 5. Re-enable sensible AC idle timers if desired:
 
    ```sh

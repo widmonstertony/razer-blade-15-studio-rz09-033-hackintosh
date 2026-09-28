@@ -1,5 +1,16 @@
 # Changelog
 
+## OLED Wake V61-P5 Native Lid + R4 — 2026-09-27
+
+- Enabled the P5 `SSDT-SLPWAK` path and published its auditable ASL/AML.
+- Added a DSDT-only, path-scoped rename of the active `\_SB.PCI0.LPCB.EC0.LID0._LID` method to `XLID`; unrelated firmware lid objects are untouched.
+- Bounded the temporary Darwin “lid open” override to the synchronous firmware `ZWAK` call and cleared it unconditionally before `_WAK` returns. This prevents a stale wake flag from swallowing the next real physical lid close.
+- Replaced the original app-only redraw helper with the validated R4 helper: two session-scoped CoreGraphics transactions, restoration to the usable 1680×945 mode, and no global ColorSync reset.
+- Verified a real physical close as `Clamshell Sleep`, followed by `Normal Sleep` wake, preserved lock state, successful R4 redraw and no second sleep or WindowServer diagnostic.
+- Documented the stable limitation: the panel still shows a solid green framebuffer for roughly 8–11 seconds before R4 redraws it. R5–R9 masking experiments are intentionally not shipped because they could report success while the physical OLED remained green.
+- Renamed and expanded the verifier to `Tools/verify-v61p5.sh`, including the paired ACPI configuration, lid runtime state and exact R4 binary checks.
+- Reworked the English and Simplified Chinese guides for reproducible USB-first setup, physical-lid testing and independent P5/R4 rollback.
+
 ## OLED Wake V61-P1 Performance — 2026-08-24
 
 - Updated the tested boot stack to OpenCore 1.0.7.

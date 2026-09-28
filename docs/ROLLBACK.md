@@ -2,7 +2,7 @@
 
 [简体中文](ROLLBACK.zh-CN.md)
 
-Rollback has two independent parts: the EFI/kernel patch and the user-space redraw service. Removing only one layer does not recreate the complete pre-V61 state.
+Rollback has three independent parts: the V61 kernel patch, the P5 native-lid ACPI set, and the R4 user-space redraw service. Removing only one part does not recreate the complete pre-fix state.
 
 ## Fastest safe recovery
 
@@ -26,6 +26,16 @@ This unloads the LaunchAgent and removes its two installed executables. Logs are
 
 Without the service, V61 may wake to a live green framebuffer rather than a usable desktop. Test only when a recovery boot path is available.
 
+## Disable only the P5 native-lid set
+
+Work on a USB copy, never the internal ESP first. Disable all three P5 members together:
+
+1. set `ACPI > Add > SSDT-SLPWAK.aml` to `Enabled=false`;
+2. disable the `_WAK → ZWAK` patch;
+3. disable the path-scoped active-lid `_LID → XLID` patch.
+
+Run OpenCore 1.0.7 `ocvalidate`, boot the USB, and retest menu sleep. A partial rollback can leave firmware methods renamed without their replacement and must not be used. Removing P5 may restore the earlier intermittent ignored-lid or second-sleep behavior; it does not remove V61 or R4.
+
 ## Disable only the V61 kernel patch
 
 On a USB copy of the private EFI, use ProperTree or another plist-aware editor:
@@ -39,7 +49,7 @@ Disabling V61 restores Tahoe's native framebuffer route, which on this machine r
 
 ## Restore the pre-fix repository baseline
 
-Git history retains the sanitized pre-fix baseline immediately before the V61-P1 commit. It is useful for comparison, not a ready-to-use private recovery image. Use the real dated private EFI backup for the machine.
+Git history retains the sanitized pre-fix baseline immediately before the V61-P1 commit and the earlier V61-P1 release branch. They are useful for comparison, not ready-to-use private recovery images. Use the real dated private EFI backup for the machine.
 
 ## Root-patch rollback
 

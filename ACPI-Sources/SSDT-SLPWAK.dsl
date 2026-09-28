@@ -1,67 +1,43 @@
 /*
- * Intel ACPI Component Architecture
- * AML/ASL+ Disassembler version 20260408 (32-bit version)
- * Copyright (c) 2000 - 2026 Intel Corporation
+ * Razer Blade 15 Studio OLED V61-P5 bounded native lid-wake correction.
  *
- * Disassembling to symbolic ASL+ operators
+ * The paired OpenCore patches rename the firmware methods as follows:
+ *   \_WAK                              -> \ZWAK
+ *   \_SB.PCI0.LPCB.EC0.LID0._LID      -> ...XLID
  *
- * Disassembly of EFI/OC/ACPI/SSDT-SLPWAK.aml
+ * P4 armed LWFG before ZWAK but depended on a future _LID evaluation to
+ * clear it.  If ZWAK did not synchronously cause that evaluation, the flag
+ * survived the wake and the next real lid-close notification was incorrectly
+ * returned as open.
  *
- * Original Table Header:
- *     Signature        "SSDT"
- *     Length           0x00000188 (392)
- *     Revision         0x02
- *     Checksum         0x1C
- *     OEM ID           "hack"
- *     OEM Table ID     "PTSWAK"
- *     OEM Revision     0x00000000 (0)
- *     Compiler ID      "INTL"
- *     Compiler Version 0x20180427 (538444839)
+ * P5 bounds the override to the synchronous ZWAK call.  Every Darwin _LID
+ * evaluation during ZWAK returns open without modifying the EC field.  After
+ * ZWAK returns, _WAK unconditionally clears LWFG, synchronizes LIDS to open,
+ * and notifies the active EC0.LID0 once.  All later physical lid events call
+ * XLID directly and remain firmware-controlled.
+ *
+ * ACPI patches are global in OpenCore.  On non-Darwin systems LWFG is never
+ * armed and the proxy is equivalent to the original firmware XLID method.
  */
-DefinitionBlock ("", "SSDT", 2, "hack", "PTSWAK", 0x00000000)
+DefinitionBlock ("", "SSDT", 2, "OC107", "LIDWK5", 0x00000000)
 {
-    External (_SB_.LID0, DeviceObj)
-    External (_SB_.LID_, DeviceObj)
-    External (_SB_.PCI0.LPCB.LID0, DeviceObj)
-    External (_SB_.PCI0.LPCB.LID_, DeviceObj)
-    External (ZWAK, MethodObj)    // 1 Arguments
+    External (LIDS, FieldUnitObj)
+    External (_SB_.PCI0.LPCB.EC0_.LID0, DeviceObj)
+    External (_SB_.PCI0.LPCB.EC0_.LID0.XLID, MethodObj) // 0 Arguments
+    External (ZWAK, MethodObj)                           // 1 Argument
 
-    Method (EXT4, 1, NotSerialized)
-    {
-        If ((0x03 == Arg0))
-        {
-            If (CondRefOf (\_SB.LID))
-            {
-                Notify (\_SB.LID, 0x80) // Status Change
-            }
-
-            If (CondRefOf (\_SB.LID0))
-            {
-                Notify (\_SB.LID0, 0x80) // Status Change
-            }
-
-            If (CondRefOf (\_SB.PCI0.LPCB.LID))
-            {
-                Notify (\_SB.PCI0.LPCB.LID, 0x80) // Status Change
-            }
-
-            If (CondRefOf (\_SB.PCI0.LPCB.LID0))
-            {
-                Notify (\_SB.PCI0.LPCB.LID0, 0x80) // Status Change
-            }
-        }
-    }
+    Name (LWFG, Zero)
 
     Scope (_SB)
     {
         Device (PCI9)
         {
-            Name (_ADR, Zero)  // _ADR: Address
+            Name (_ADR, Zero)
             Name (FNOK, Zero)
         }
     }
 
-    Method (_WAK, 1, NotSerialized)  // _WAK: Wake
+    Method (_WAK, 1, NotSerialized)
     {
         If (_OSI ("Darwin"))
         {
@@ -71,13 +47,44 @@ DefinitionBlock ("", "SSDT", 2, "hack", "PTSWAK", 0x00000000)
                 Arg0 = 0x03
             }
 
-            If (CondRefOf (EXT4))
+            If ((Arg0 == 0x03))
             {
-                EXT4 (Arg0)
+                LWFG = One
             }
         }
 
         Local0 = ZWAK (Arg0)
+
+        If (_OSI ("Darwin"))
+        {
+            If ((Arg0 == 0x03))
+            {
+                LWFG = Zero
+                LIDS = One
+                Notify (\_SB.PCI0.LPCB.EC0.LID0, 0x80)
+            }
+            Else
+            {
+                LWFG = Zero
+            }
+        }
+
         Return (Local0)
+    }
+
+    Scope (_SB.PCI0.LPCB.EC0.LID0)
+    {
+        Method (_LID, 0, NotSerialized)
+        {
+            If (_OSI ("Darwin"))
+            {
+                If ((\LWFG == One))
+                {
+                    Return (One)
+                }
+            }
+
+            Return (XLID ())
+        }
     }
 }

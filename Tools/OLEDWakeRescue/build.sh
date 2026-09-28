@@ -5,15 +5,16 @@ rescue_root="${0:A:h}"
 rescue_source="$rescue_root/src"
 rescue_output="$rescue_root/bin"
 rescue_clang="$(/usr/bin/xcrun --sdk macosx --find clang)"
+rescue_sdk="$(/usr/bin/xcrun --sdk macosx --show-sdk-path)"
 
 /bin/mkdir -p "$rescue_output"
 
-"$rescue_clang" -std=c11 -O2 -Wall -Wextra \
+"$rescue_clang" -isysroot "$rescue_sdk" -std=c11 -O2 -Wall -Wextra \
 	"$rescue_source/DisplayModeNudgeV2.c" \
 	-framework CoreFoundation -framework CoreGraphics -lm \
 	-o "$rescue_output/DisplayModeNudgeV2"
 
-"$rescue_clang" -std=c11 -O2 -Wall -Wextra \
+"$rescue_clang" -isysroot "$rescue_sdk" -std=c11 -O2 -Wall -Wextra \
 	"$rescue_source/OLEDWakeRescueAgent.c" \
 	-framework CoreFoundation -framework IOKit -framework Security -lpthread \
 	-o "$rescue_output/OLEDWakeRescueAgent"

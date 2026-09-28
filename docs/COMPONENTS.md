@@ -1,8 +1,8 @@
-# V61-P1 component inventory
+# V61-P5/R4 component inventory
 
-Versions below describe the sanitized public V61-P1 tree. “Enabled” refers to the top-level OpenCore entry; plug-ins have their own ordered entries.
+Versions below describe the sanitized public V61-P5/R4 tree. “Enabled” refers to the top-level OpenCore entry; plug-ins have their own ordered entries.
 
-| Component | Version | V61-P1 state |
+| Component | Version | V61-P5 state |
 | --- | ---: | --- |
 | OpenCore | 1.0.7 | Enabled |
 | RazerOLEDWakeFix.kext | 4.5.0 / V61 | Enabled only on Darwin 25.2.x |
@@ -27,6 +27,7 @@ Versions below describe the sanitized public V61-P1 tree. “Enabled” refers t
 | VoodooI2CHID.kext | 1.0 + HID V12 | Enabled |
 | VoodooPS2Controller.kext | 2.3.7 | Controller and keyboard enabled |
 | WhateverGreen.kext | 1.7.0 | Enabled |
+| SSDT-SLPWAK.aml | P5 / OEM table `LIDWK5` | Enabled with paired, path-scoped ACPI renames |
 
 ## Apple-derived components omitted from Git
 
@@ -42,7 +43,7 @@ Versions below describe the sanitized public V61-P1 tree. “Enabled” refers t
 
 | Component | Behavior |
 | --- | --- |
-| OLEDWakeRescueAgent | Aqua LaunchAgent; event-driven IOKit wake listener; eight-second delay |
-| DisplayModeNudgeV2 | Exact Samsung/mode gate; app-only 1600×900 HiDPI transaction and exact restore |
+| OLEDWakeRescueAgent | Stable R4 Aqua LaunchAgent; event-driven IOKit wake listener; eight-second delay |
+| DisplayModeNudgeV2 | R4 exact Samsung/mode gate; two session-scoped transactions; restores the `usable=1` 1680×945 mode; no global ColorSync reset |
 
 Both tested executables are x86_64 and ad-hoc signed. Source and build scripts are under `Tools/OLEDWakeRescue`.

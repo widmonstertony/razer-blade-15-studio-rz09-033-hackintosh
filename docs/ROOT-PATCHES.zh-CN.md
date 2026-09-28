@@ -27,7 +27,7 @@ IO80211FamilyLegacy.kext/Contents/PlugIns/AirPortBrcmNIC.kext
 5. 使用已经审查的补丁器版本，只应用所需的 Modern Wireless 和 Modern Audio 根补丁集。
 6. 通过 OpenCore 重启。
 7. 验证 Wi-Fi 连接和上网、内置扬声器、麦克风/耳机以及一次干净重启。
-8. 重新运行 V61-P1 检查，并做一次真实睡眠唤醒。
+8. 重新运行 `Tools/verify-v61p5.sh`，然后分别重复菜单睡眠唤醒和真实物理合盖/开盖测试。
 
 不要因为界面里有 Post-Install Root Patch 按钮就直接点击。必须先确认系统 build、KDK 和 patchset 定义全部匹配。把补丁器生成的日志与私有备份放在一起保存。
 
@@ -45,7 +45,7 @@ macOS 更新会重建封印的 System 卷。之前修改过的 framework 和驱�
 6. 重启并验证 Wi-Fi/音频；
 7. 重新进行受保护的 OLED 睡眠唤醒验证。
 
-本仓库目前没有任何证据证明 V61-P1 可安全用于 Tahoe 26.6.x。Darwin 版本限制是故意保留的保护措施。
+本仓库目前没有任何证据证明 V61-P5/R4 可安全用于 Tahoe 26.6.x。Darwin 版本限制是故意保留的保护措施。
 
 ## Wi-Fi 消失时的恢复
 

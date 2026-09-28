@@ -18,7 +18,7 @@ trap rescue_cleanup EXIT
 if [[ "$(/usr/bin/sw_vers -productVersion)" != 26.2 || \
       "$(/usr/bin/sw_vers -buildVersion)" != 25C56 || \
       "$(/usr/bin/uname -r)" != 25.2.* ]]; then
-	print -u2 "Refusing installation: V61-P1 is validated only on macOS 26.2 (25C56), Darwin 25.2.x."
+	print -u2 "Refusing installation: V61-P5/R4 is validated only on macOS 26.2 (25C56), Darwin 25.2.x."
 	exit 65
 fi
 

@@ -19,7 +19,7 @@
 - Configured platform ID: `00009B3E`
 - Panel link: 4K eDP with DPCD maximum link rate `0x14`
 
-V61-P1 WhateverGreen/framebuffer properties include:
+V61-P5 WhateverGreen/framebuffer properties include:
 
 - `enable-backlight-registers-alternative-fix`
 - `enable-dpcd-max-link-rate-fix`
@@ -48,7 +48,7 @@ OLED panels do not have a conventional LCD backlight. Whether macOS can control 
 
 - Codec: Realtek ALC298
 - Hardware ID: `10EC:0298`
-- Layout ID in V61-P1: `47`
+- Layout ID in V61-P5: `47`
 - AppleALC and VerbStub are enabled
 - `SSDT-ALC298.aml` exists but is disabled
 
@@ -56,7 +56,7 @@ OLED panels do not have a conventional LCD backlight. Whether macOS can control 
 
 - Wi-Fi PCI ID: `14E4:43A0`
 - Broadcom BCM4360-class adapter
-- V61-P1 uses Apple legacy networking components on Darwin 23 and newer; those Apple-derived binaries are not redistributed in this public repository.
+- V61-P5 uses Apple legacy networking components on Darwin 23 and newer; those Apple-derived binaries are not redistributed in this public repository.
 
 ## USB and input
 
@@ -66,4 +66,4 @@ OLED panels do not have a conventional LCD backlight. Whether macOS can control 
 
 ## Thunderbolt
 
-`SSDT-TB3HP.aml` targets root port `RP13` and is enabled in V61-P1. The final protected sleep/wake test passed with this state.
+`SSDT-TB3HP.aml` targets root port `RP13` and is enabled in V61-P5. The final protected menu and physical-lid sleep/wake tests passed with this state.

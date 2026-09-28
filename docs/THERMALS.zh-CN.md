@@ -2,14 +2,14 @@
 
 [English](THERMALS.md)
 
-Razer 笔记本在 macOS 下不会自动变得更冷、更安静。Apple 的风扇曲线、CPU 功耗限制和显示功耗都是为自家硬件调的；这台 Blade 使用 Razer EC、被禁用的 NVIDIA 独显、驱动 4K 10-bit OLED 的 Intel 核显，以及非原生 ACPI/SMC 上报。
+Razer 笔记本在 macOS 下不会自动变得更冷、更安静。Apple 的风扇曲线、CPU 功耗限制和显示功耗都是为自家硬件调的；这台 Blade 使用 Razer EC、被禁用的 NVIDIA 独显、驱动 4K OLED 的 Intel 核显，以及非原生 ACPI/SMC 上报。
 
 ## 已验证机器上的证据
 
 2026-08-24 的只读采样发现：
 
 - 活动显示 GPU 只有 Intel UHD 630；`system_profiler SPDisplaysDataType` 没有 NVIDIA；
-- 屏幕使用要求保留的 10-bit 路径和较大的 HiDPI backing surface；
+- 屏幕使用较大的 HiDPI backing surface；
 - `WindowServer` 短时约占 32% CPU；
 - 正在工作的 Codex renderer/service 和 Continuity Capture 也贡献了负载；
 - 后一次双样本中 CPU 约 89% 空闲，所以不是 CPU 一直满载；
@@ -19,18 +19,18 @@ Razer 笔记本在 macOS 下不会自动变得更冷、更安静。Apple 的风�
 
 这些证据首先指向显示合成和当前应用负载，还不能证明 CPU 电源管理坏了。要判断长期原因，仍需静置 10 分钟对比温度；一秒钟的进程快照不能说明持续状态。
 
-## 为什么 4K、10-bit、HiDPI 会热
+## 为什么缩放 4K HiDPI 会热
 
-系统显示“看起来像 1680×945”时，macOS 实际先渲染 3360×1890 backing surface，再合成到 3840×2160 屏幕。30-bit framebuffer 比 8-bit 搬运更多数据。窗口透明、视频、浏览器动画和 BetterDisplay 都可能让核显/显示引擎保持忙碌。OLED 在显示大面积亮色时本身也更耗电。
+系统显示“看起来像 1680×945”时，macOS 实际先渲染 3360×1890 backing surface，再合成到 3840×2160 屏幕。窗口透明、视频、浏览器动画和 BetterDisplay 都可能让核显/显示引擎保持忙碌。OLED 在显示大面积亮色时本身也更耗电。
 
-V61-P1 故意保留 10-bit。降温不等于必须改成 8-bit。
+P5/R4 使用 24-bit `ARGB8888` framebuffer 也能正常唤醒。当前用户会话已验证 BetterDisplay 4.3.5 可以另外让活动 framebuffer 报告 30-bit `ARGB2101010`。这项额外显示处理可能影响 WindowServer/核显负载，因此比较温度时必须保持相同模式和色深；不要把 10-bit 当成降温方案。
 
 ## 安全优化顺序
 
 1. 电脑完全不操作静置 10 分钟，再看“活动监视器”的 CPU 和能源页。
 2. 暂时退出 BetterDisplay，保持 1680×945 HiDPI 不变，比较 5 分钟内 `WindowServer` 占用和温度。
 3. 关闭较重的浏览器、视频和 Codex 工作；不用时关闭 Continuity Camera。
-4. 使用深色模式并降低画面亮度。OLED 显示暗色时能降低面板功耗，同时不改变 10-bit framebuffer。
+4. 使用深色模式并降低画面亮度。OLED 显示暗色时能降低面板功耗，同时不用改 EFI 显示补丁。
 5. 如果需要，恢复合理的交流电空闲计时：
 
    ```sh

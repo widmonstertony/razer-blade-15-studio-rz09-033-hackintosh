@@ -27,7 +27,7 @@ The tested system used a temporary, unofficial OpenCore-Patcher 3.0.0 build from
 5. Use the reviewed patcher build to apply only the required Modern Wireless and Modern Audio root patch sets.
 6. Restart through OpenCore.
 7. Verify Wi-Fi association, Internet access, internal speakers, microphone/headphone behavior and one clean restart.
-8. Re-run the V61-P1 OLED checks and one real sleep/wake test.
+8. Re-run `Tools/verify-v61p5.sh`, then repeat both a menu sleep/wake and a physical-lid close/open test.
 
 Do not run Post-Install Root Patch merely because the button is available. First confirm the OS build, KDK and patchset definitions all match. Keep the patcher's generated log with the private backup.
 
@@ -45,7 +45,7 @@ After any supported update, the correct order is:
 6. restart and verify Wi-Fi/audio;
 7. repeat protected OLED sleep/wake validation.
 
-There is currently no evidence in this repository that V61-P1 is safe on Tahoe 26.6.x. Its Darwin guard is intentional.
+There is currently no evidence in this repository that V61-P5/R4 is safe on Tahoe 26.6.x. Its Darwin guard is intentional.
 
 ## Recovery when Wi-Fi is absent
 

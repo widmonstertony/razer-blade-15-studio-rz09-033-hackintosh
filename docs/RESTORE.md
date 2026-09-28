@@ -1,6 +1,6 @@
 # Restore and recovery
 
-The former baseline restore notes have been superseded by the complete V61-P1 recovery guide:
+The former baseline restore notes have been superseded by the complete V61-P5/R4 recovery guide:
 
 - [English rollback instructions](ROLLBACK.md)
 - [简体中文回滚说明](ROLLBACK.zh-CN.md)
