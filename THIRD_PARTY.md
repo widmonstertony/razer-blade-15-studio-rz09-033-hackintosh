@@ -18,4 +18,10 @@ This repository aggregates configuration and redistributable files from multiple
 - [HibernationFixup](https://github.com/acidanthera/HibernationFixup)
 - [CpuTscSync](https://github.com/acidanthera/CpuTscSync)
 
+## V61-P1 custom components
+
+- `RazerOLEDWakeFix` is original exact-target code in this repository and uses the Lilu plug-in API. Its Lilu bootstrap file retains the upstream Acidanthera copyright notice. The implementation was informed by public Linux i915 behavior and hardware traces; no Apple framebuffer binary is included.
+- HID V12 modifies VoodooI2C and VoodooI2CHID. The exact upstream commits and reconstructable patches are under `Sources/HID-V12`; those patches and modified binaries are GPLv3. A copy of GPLv3 is in `LICENSES/GPL-3.0.txt`.
+- `DisplayModeNudgeV2` and `OLEDWakeRescueAgent` are original user-space utilities under the repository MIT license and use public CoreGraphics, IOKit and Security framework APIs.
+
 Apple-derived binaries listed in the main README are intentionally not redistributed.

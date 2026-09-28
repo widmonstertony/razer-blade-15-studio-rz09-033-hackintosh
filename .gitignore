@@ -6,3 +6,5 @@ config.local.plist
 config.private.plist
 SMBIOS.txt
 private/
+vendor/
+Sources/RazerOLEDWakeFix/build/

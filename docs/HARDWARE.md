@@ -19,14 +19,15 @@
 - Configured platform ID: `00009B3E`
 - Panel link: 4K eDP with DPCD maximum link rate `0x14`
 
-Baseline WhateverGreen properties include:
+V61-P5 WhateverGreen/framebuffer properties include:
 
-- `enable-backlight-registers-fix`
+- `enable-backlight-registers-alternative-fix`
 - `enable-dpcd-max-link-rate-fix`
 - `enable-max-pixel-clock-override`
+- `complete-modeset` and an exact framebuffer mask
 - custom framebuffer connector data
 
-The first property is the legacy form and is part of the known OLED/modern-macOS issue being tested.
+The V61 marker and exact-target eDP behavior are provided by `RazerOLEDWakeFix.kext`; see `OLED-WAKE.md`.
 
 ### NVIDIA Quadro RTX 5000 Max-Q
 
@@ -47,7 +48,7 @@ OLED panels do not have a conventional LCD backlight. Whether macOS can control 
 
 - Codec: Realtek ALC298
 - Hardware ID: `10EC:0298`
-- Layout ID in the baseline: `47`
+- Layout ID in V61-P5: `47`
 - AppleALC and VerbStub are enabled
 - `SSDT-ALC298.aml` exists but is disabled
 
@@ -55,14 +56,14 @@ OLED panels do not have a conventional LCD backlight. Whether macOS can control 
 
 - Wi-Fi PCI ID: `14E4:43A0`
 - Broadcom BCM4360-class adapter
-- The baseline uses Apple legacy networking components on Darwin 23 and newer; those Apple-derived binaries are not redistributed in this public repository.
+- V61-P5 uses Apple legacy networking components on Darwin 23 and newer; those Apple-derived binaries are not redistributed in this public repository.
 
 ## USB and input
 
 - Custom `USBPorts.kext` personality: `MacBookPro16,1-XHC`
 - Internal USB ports are marked connector type `255`
-- VoodooI2C, VoodooI2CHID and VoodooPS2Controller are present
+- HID V12 VoodooI2C/VoodooI2CHID and VoodooPS2Controller are present
 
 ## Thunderbolt
 
-`SSDT-TB3HP.aml` targets root port `RP13` and is enabled in the baseline. Thunderbolt can affect sleep reliability, so testing without this table is a secondary diagnostic step if the primary OLED/wake patch does not resolve the issue.
+`SSDT-TB3HP.aml` targets root port `RP13` and is enabled in V61-P5. The final protected menu and physical-lid sleep/wake tests passed with this state.
