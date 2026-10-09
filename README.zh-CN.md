@@ -1,6 +1,8 @@
-# Razer Blade 15 Studio 2020 黑苹果 — OLED 唤醒 V61-P5 + R4
+# Razer Blade 15 Studio 2020 黑苹果 — OLED V61-P5 + R4 / MIC22X
 
 [English](README.md)
+
+**2026-10-09 可用状态快照：**从新一轮只读实体 ESP 备份刷新，配对加入 MIC22X 音频。机主确认完整关机再开机后扬声器、麦克风可用；另行修复应用麦克风授权后，Codex 听写也可用。公开 EFI 已脱敏，不是完整私有 ESP 镜像。请阅读[当前快照与音频配置](docs/CURRENT-SNAPSHOT.zh-CN.md)和[升级 / NVIDIA 评估](docs/UPGRADE-NVIDIA.zh-CN.md)。此次没有升级 macOS，也没有加入 NVIDIA 驱动。
 
 这个版本是**目前可日常使用、并经过本机验证的 OLED 睡眠唤醒版本**，不再是旧的“修复前基线”。在完全匹配的测试机器上，苹果菜单睡眠和真实物理合盖睡眠都能唤醒到可见、仍保持锁定的桌面。OLED 刚亮时仍会显示约 8–11 秒整块绿色，随后由 R4 服务自动重画。V61-P5 还修复了旧版偶发吞掉真实合盖事件的问题。
 
@@ -15,6 +17,7 @@
 | OpenCore | 1.0.7 |
 | OLED 补丁 | V61，kext 4.5.0，标记 `61.0-oled-s3-edp14-rate-select` |
 | 输入补丁 | HID V12 |
+| 音频 | ALC298、自定义 AppleALC 1.9.7 MIC22X、`layout-id=22`、VerbStub，以及精确版本 Modern Audio 根补丁 |
 | 显示模式 | 1680×945 HiDPI、3360×1890 backing、60 Hz；BetterDisplay 4.3.5 覆盖后当前报告 30-bit `ARGB2101010` |
 | 唤醒结果 | 菜单与真实合盖 Normal Sleep/Wake 均通过；锁屏保留；R4 重画后桌面正常 |
 | 原生合盖补丁 | V61-P5 有界 `_WAK` / 活动 `EC0.LID0._LID` 校正 |
@@ -63,7 +66,7 @@
 - 触控板和触屏：HID V12 下可用。
 - 色深：未启用 BetterDisplay 覆盖时，P5/R4 合盖唤醒审计为 `24-Bit Color (ARGB8888)`；在 BetterDisplay 4.3.5 中启用 10-bit 后，新一轮运行时审计为 `30-Bit Color (ARGB2101010)`。这是用户态显示设置，不是 EFI/V61 自动提供的功能；每次唤醒或切换显示模式后都应重新核对。
 - Broadcom BCM4360 Wi-Fi：依赖仓库未包含的 Apple 派生 kext 和完全匹配系统版本的根补丁。
-- 内置音频：依赖测试安装中完全匹配版本的根补丁。
+- 内置音频：MIC22X 在完整关机再开机后，输入输出经机主确认可用；仍依赖完全匹配版本的根补丁。配置方法和热重启验收限制见[音频说明](docs/CURRENT-SNAPSHOT.zh-CN.md)。
 - NVIDIA Quadro RTX 5000 Max-Q：在 macOS 下禁用。
 - 后续 macOS 更新：在重新验证所有二进制补丁和 V61 偏移前不支持。
 

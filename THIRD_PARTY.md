@@ -25,3 +25,7 @@ This repository aggregates configuration and redistributable files from multiple
 - `DisplayModeNudgeV2` and `OLEDWakeRescueAgent` are original user-space utilities under the repository MIT license and use public CoreGraphics, IOKit and Security framework APIs.
 
 Apple-derived binaries listed in the main README are intentionally not redistributed.
+
+## MIC22X audio resources
+
+`EFI/OC/Kexts/AppleALC.kext` contains a modified AppleALC 1.9.7 resource pair for ALC298. AppleALC and its modified resources retain the upstream BSD-3-Clause terms in [LICENSES/AppleALC-BSD-3-Clause.txt](LICENSES/AppleALC-BSD-3-Clause.txt). Exact resources, a guarded binary reproduction script and attribution are under [Sources/AppleALC-MIC22X](Sources/AppleALC-MIC22X). This is not an upstream-supported layout and contains no AppleHDA binary.

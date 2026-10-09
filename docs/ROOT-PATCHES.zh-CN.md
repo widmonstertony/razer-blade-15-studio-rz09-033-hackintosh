@@ -4,6 +4,8 @@
 
 已验证机器运行 macOS Tahoe 26.2 build 25C56，并使用与该版本完全匹配的根补丁来支持 Broadcom BCM4360 Wi-Fi 和内置音频。这些补丁不属于 EFI，也是整个安装中最脆弱的部分。
 
+2026-10-09 快照将 Modern Audio 与自定义 AppleALC MIC22X / layout 22 配对。请按[音频配置与冷启动验收](CURRENT-SNAPSHOT.zh-CN.md)操作，不要混用旧 layout 47 实验。[升级评估](UPGRADE-NVIDIA.zh-CN.md)不会放宽本指南的精确 build 限制。
+
 ## 仓库包含和不包含的内容
 
 config 中保留了这些 Enabled 引用：

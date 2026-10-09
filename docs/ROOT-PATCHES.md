@@ -4,6 +4,8 @@
 
 The validated machine uses macOS Tahoe 26.2 build 25C56 plus exact-build root patches for Broadcom BCM4360 Wi-Fi and internal audio. These are separate from the EFI and are the most fragile part of the installation.
 
+The 2026-10-09 snapshot pairs Modern Audio with custom AppleALC MIC22X / layout 22. Follow the [audio setup and cold-start verification](CURRENT-SNAPSHOT.md), not the old layout-47 experiments. The [upgrade assessment](UPGRADE-NVIDIA.md) does not change this guide's exact-build boundary.
+
 ## What is and is not in this repository
 
 The config contains enabled references to:

@@ -1,5 +1,15 @@
 # Changelog
 
+## Working snapshot — OLED V61-P5 + R4 / MIC22X — 2026-10-09
+
+- Refreshed the public config and AppleALC binary from a newly captured, SHA-256-verified, read-only physical ESP snapshot; no physical EFI write.
+- Changed ALC298 layout to 22 and included the matched MIC22X AppleALC 1.9.7 binary, exact resources, guarded reproduction script and upstream BSD notice.
+- Preserved the current diagnostic boot arguments, including `amfi=0x80`; did not enable AMFIPass or repeat the unbootable TCC1 experiment.
+- Owner confirmed speaker/microphone operation after cold startup and separately confirmed Codex microphone/dictation. Application privacy authorization is not an EFI feature and private TCC databases are not redistributed.
+- Rechecked current 30-bit display, Wi-Fi association and stable P5/R4 runtime checks without forcing sleep/restart. Fresh real sleep, warm restart and peripheral tests remain separate acceptance tasks.
+- Added bilingual current-snapshot/audio and target-build upgrade/NVIDIA guides. 26.7.1 is an unvalidated candidate; macOS 27 is Apple-silicon-only. NVIDIA remains disabled.
+- Omitted private SMBIOS/password material, Apple-derived files, unused recovery debris, Microsoft/Ubuntu boot state and personal logs. The complete original ESP image remains private.
+
 ## OLED Wake V61-P5 Native Lid + R4 — 2026-09-27
 
 - Enabled the P5 `SSDT-SLPWAK` path and published its auditable ASL/AML.

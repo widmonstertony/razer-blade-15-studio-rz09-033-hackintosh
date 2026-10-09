@@ -4,6 +4,8 @@
 
 Read this entire page before writing an EFI partition. This procedure is intentionally conservative because the public configuration is sanitized and omits files that cannot be redistributed.
 
+For the 2026-10-09 MIC22X snapshot, also complete [audio setup and verification](CURRENT-SNAPSHOT.md). App microphone permission is a separate OS/user setting, not reproduced by this EFI.
+
 ## 1. Confirm the exact target
 
 Run in macOS:

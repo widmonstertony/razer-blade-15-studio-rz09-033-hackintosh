@@ -1,6 +1,8 @@
-# Razer Blade 15 Studio 2020 Hackintosh — OLED Wake V61-P5 + R4
+# Razer Blade 15 Studio 2020 Hackintosh — OLED V61-P5 + R4 / MIC22X
 
 [简体中文](README.zh-CN.md)
+
+**2026-10-09 working snapshot:** refreshed from a new read-only physical ESP backup, with matched MIC22X audio. The owner confirmed working speakers, microphone and Codex dictation after a full cold shutdown/start and a separate microphone-permission repair. The public EFI is sanitized, not a complete private ESP backup. Read [current snapshot and audio setup](docs/CURRENT-SNAPSHOT.md) and [upgrade/NVIDIA assessment](docs/UPGRADE-NVIDIA.md). Neither a macOS upgrade nor an NVIDIA driver is included.
 
 This release is the **currently usable, machine-validated OLED sleep/wake build**, not the older pre-fix snapshot. On the exact test machine, both Apple-menu sleep and physical-lid sleep wake to a visible, locked desktop. The OLED initially shows a solid green framebuffer for about 8–11 seconds; the R4 service then redraws it automatically. V61-P5 also fixes the earlier intermittent failure in which a real lid close was ignored.
 
@@ -15,6 +17,7 @@ This release is the **currently usable, machine-validated OLED sleep/wake build*
 | OpenCore | 1.0.7 |
 | OLED patch | V61, kext version 4.5.0, marker `61.0-oled-s3-edp14-rate-select` |
 | Input patch | HID V12 |
+| Audio | ALC298, custom AppleALC 1.9.7 MIC22X, `layout-id=22`, VerbStub and exact-build Modern Audio root patch |
 | Display mode | 1680×945 HiDPI, 3360×1890 backing, 60 Hz; BetterDisplay 4.3.5 override currently reports 30-bit `ARGB2101010` |
 | Wake result | Menu and physical-lid Normal Sleep/Wake passed; lock preserved; desktop visible after R4 redraw |
 | Native-lid patch | V61-P5 bounded `_WAK`/active `EC0.LID0._LID` correction |
@@ -63,7 +66,7 @@ The full mechanism and the final validation evidence are in [OLED wake design an
 - Trackpad and touchscreen: working with HID V12.
 - Color depth: without a BetterDisplay override, the P5/R4 lid-wake audit reported `24-Bit Color (ARGB8888)`. After enabling 10-bit in BetterDisplay 4.3.5, a new runtime audit reports `30-Bit Color (ARGB2101010)`. This is a user-space display setting, not an EFI/V61 feature; verify it again after every wake or display-mode change.
 - Broadcom BCM4360 Wi-Fi: working only with the machine's omitted Apple-derived kexts and exact-build root patches.
-- Internal audio: depends on the exact-build root patch used by the tested installation.
+- Internal audio: MIC22X input/output confirmed after a full cold shutdown/start; requires the exact-build root patch. See the [audio guide](docs/CURRENT-SNAPSHOT.md) for setup and the warm-restart qualification limit.
 - NVIDIA Quadro RTX 5000 Max-Q: disabled in macOS.
 - Future macOS updates: unsupported until all binary patches and V61 offsets are revalidated for the new build.
 
