@@ -6,7 +6,7 @@
 
 `main` 保存脱敏的 **26.7.1 / 25G241 / Darwin 25.6.x** Intel 主显示基线：OpenCore 1.0.7、HID V12、MIC22X 和 OLED **4.7.1**。机主已在完整关机再开机后确认 Wi-Fi、声音、触控板正常。OLED 已加载、补丁路由验证就绪；**26.7.1 真实睡眠唤醒尚未验收**，尤其是独显启用后的组合状态。默认公开 EFI 仍禁用 NVIDIA。
 
-**新增 NVIDIA 实测证据：**机主本地的 NVRM + 重建 Tahoe NVAccel 已对 Quadro RTX 5000 完成一次固件初始化，识别 16 GiB 显存，并通过真正由 NVIDIA 执行的 Metal 整数计算和离屏绘图；Intel 主屏 10-bit 保持正常。见[应用专用 NVIDIA 配置、限制和回退](docs/NVIDIA-APP-ONLY.zh-CN.md)。`Tools/NVIDIAAppOnly` 提供可选后台启动服务和全应用 Metal 开放策略；安装密码授权和下一轮冷启动测试仍待完成。这不等于 CUDA、所有软件兼容或睡眠通过，复制默认 EFI 也不会安装这些系统组件。
+**新增 NVIDIA 实测证据：**机主本地的 NVRM + 重建 Tahoe NVAccel 已对 Quadro RTX 5000 完成一次固件初始化，识别 16 GiB 显存，并通过真正由 NVIDIA 执行的 Metal 整数计算和离屏绘图；Intel 主屏 10-bit 保持正常。见[应用专用 NVIDIA 配置、限制和回退](docs/NVIDIA-APP-ONLY.zh-CN.md)。`Tools/NVIDIAAppOnly` 的可选后台启动服务和全应用 Metal 开放策略现已在机主本机安装，并通过独立核验；下一轮自动冷启动测试仍待完成。这不等于 CUDA、所有软件兼容或睡眠通过，复制默认 EFI 也不会安装这些系统组件。
 
 从当前 [26.7.1 配置与验收指南](docs/MAIN-26.7.1.zh-CN.md)、[重装指南](docs/REINSTALL.zh-CN.md)、[精确状态](docs/STATUS-26.7.1.json)开始。个人 SMBIOS、Apple 衍生依赖未上传。完整全新重装尚未演练；这不是完整系统备份，也不是通用即插即用 EFI。
 

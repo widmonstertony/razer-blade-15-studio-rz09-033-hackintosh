@@ -24,6 +24,12 @@
   "cudaQualified": false,
   "dailyApplicationsQualified": false,
   "automaticStartupColdBootQualified": false,
+  "startupOverlayInstalledAndIndependentAuditPassed": true,
+  "overlayInstallAuditSha256": "7b287b06cf434f6fa8a22d72617e5e2a41cb557fa1c8d150ed9f0d2d04e49b2f",
+  "currentBootServiceInitCalls": 0,
+  "currentBootServiceRuns": 1,
+  "currentBootServiceLastExitCode": 0,
+  "rootPrivateRollbackBackupIndependentlyRead": false,
   "oledSleepWake26_7_1Qualified": false,
   "upstreamDriverBinariesRedistributed": false,
   "publicDefaultEfiStillNvidiaOff": true

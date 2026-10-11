@@ -8,7 +8,7 @@ Exact owner machine: RZ09-0330Q / BIOS 1.06 / i7-10875H / Intel UHD 630 `8086:9b
 
 The owner-local driver installation is complete. One manually authorized GSP/RM initialization succeeded and returned a real 16 GiB VRAM query. A subsequent one-shot Metal suite explicitly selected Quadro PCI `10de:1eb5`, not Intel: three runs of 65,536 integers and all 4,096 offscreen RGBA pixels were correct. Independent post-checks retained Intel primary 10-bit, installed bytes/signatures, active collections and security; no new kernel/WindowServer crash-report filenames were found. These are small correctness results, not full stability or performance qualification.
 
-The optional all-app access/startup overlay is prepared and CPU/failure-tested. Owner installation authentication and its next cold-boot acceptance are pending. Check [STATUS-26.7.1.json](STATUS-26.7.1.json) for updates. Default public `EFI/` stays the Intel-primary NVIDIA-off baseline.
+The optional all-app access/startup overlay is now installed on the owner machine and independently checked: root-owned helper/list/plist hashes and permissions match, launchd registered one run with exit code 0, and this already initialized boot was skipped with zero additional firmware calls. Intel 10-bit, driver/native-component bytes/signatures, KCs and security remain intact. Its next automatic cold-boot acceptance is pending. The root-private rollback backup was created by the owner installer but not independently opened by the non-root audit. Check [STATUS-26.7.1.json](STATUS-26.7.1.json) for updates. Default public `EFI/` stays the Intel-primary NVIDIA-off baseline.
 
 ## What “all applications” means
 
