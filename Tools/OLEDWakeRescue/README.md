@@ -1,5 +1,11 @@
 # OLED Wake Rescue
 
+<!-- CURRENT-MAIN-NOTICE-20261011 -->
+
+Current main is 26.7.1 / 25G241. The material below preserves earlier 26.2 or pre-port history, not current execution instructions. Follow the [current complete setup/rebuild guide](../../docs/MAIN-26.7.1.md). New-build Wi-Fi/audio/trackpad and OLED loading/routes passed; new-build sleep and clean reinstall remain pending. Use the backup branch for 26.2.
+
+## Historical record (original versions/status retained)
+
 `OLEDWakeRescueAgent` waits for a real system-wake notification. Eight seconds later, the validated R4 `DisplayModeNudgeV2` performs two session-scoped CoreGraphics mode transactions and restores the exact usable mode on the validated Samsung panel.
 
 The stable result deliberately allows the panel's solid-green wake framebuffer to remain visible for roughly 8–11 seconds before redraw. Do not replace R4 with the abandoned R5–R9 brightness/fade masking experiments; on this hardware they could report API success while the physical OLED remained permanently green.

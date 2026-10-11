@@ -1,0 +1,44 @@
+{
+  "scope": "Public copies only; private/physical EFI untouched",
+  "method": "Apple strip -S; local compiler paths removed",
+  "qualifiedRuntimeUsesSourceBytes": true,
+  "strippedPublicVariantBootTested": false,
+  "binaries": {
+    "EFI/OC/Kexts/RazerOLEDWakeFix.kext/Contents/MacOS/RazerOLEDWakeFix": {
+      "sourceSha256": "1eeac97d8f68d99871c939cfee97f195a59848213694034bc3d2f910db42151d",
+      "publicSha256": "e3f30cff67dd6523f083927a9fb11e9c42c998d7b9d5f6ee0c1d502bba4ffa01",
+      "nonDebugSectionsIdentical": true,
+      "externalSymbolsIdentical": true
+    },
+    "EFI/OC/Kexts/VoodooI2C.kext/Contents/MacOS/VoodooI2C": {
+      "sourceSha256": "83e7f84498bd68af481ee129ed3851cd690237abf4acc5027055e25a77658ff3",
+      "publicSha256": "b65410938009dfe7d67b98d0120ffa8aca50855e676a00de7f1eeb8b6de8522a",
+      "nonDebugSectionsIdentical": true,
+      "externalSymbolsIdentical": true
+    },
+    "EFI/OC/Kexts/VoodooI2C.kext/Contents/PlugIns/VoodooGPIO.kext/Contents/MacOS/VoodooGPIO": {
+      "sourceSha256": "b5ab894fb329f5527bd8b1d52c1c1abda74ea7ee2950c1270e8dc40df97a9976",
+      "publicSha256": "d3ce770d9d240404d2c894f536891bf1622ad13c66b1e025cc73b694c350eb25",
+      "nonDebugSectionsIdentical": true,
+      "externalSymbolsIdentical": true
+    },
+    "EFI/OC/Kexts/VoodooI2C.kext/Contents/PlugIns/VoodooI2CServices.kext/Contents/MacOS/VoodooI2CServices": {
+      "sourceSha256": "d203212c86dc0b9abc2aa8e7a96ceff8fb79c5996add6e20a66831f0b830c7ab",
+      "publicSha256": "605ad3da97772babd4d6b22c6477de5a93ad02e5b6938f534d45aa82218ab295",
+      "nonDebugSectionsIdentical": true,
+      "externalSymbolsIdentical": true
+    },
+    "EFI/OC/Kexts/VoodooI2C.kext/Contents/PlugIns/VoodooInput.kext/Contents/MacOS/VoodooInput": {
+      "sourceSha256": "4a247f353cdeb07b607e6b9580e903141c82b1e2fc61483c678a53848b3d81c1",
+      "publicSha256": "6cffe7f3df658dbcd67528a861ae444ad2a82d47667ca658ba598de1a2fded70",
+      "nonDebugSectionsIdentical": true,
+      "externalSymbolsIdentical": true
+    },
+    "EFI/OC/Kexts/VoodooI2CHID.kext/Contents/MacOS/VoodooI2CHID": {
+      "sourceSha256": "907c07cdeff1ce01360b474030af0065eba14521296853ce479464dcd987fc8c",
+      "publicSha256": "05bfe5e74a40dc64f96863fe0b303a7fcf12fcce897e145b24f55faa930051de",
+      "nonDebugSectionsIdentical": true,
+      "externalSymbolsIdentical": true
+    }
+  }
+}

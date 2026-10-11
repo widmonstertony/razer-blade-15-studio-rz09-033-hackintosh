@@ -1,6 +1,20 @@
-# Razer Blade 15 Studio 2020 Hackintosh — OLED V61-P5 + R4 / MIC22X
+# Razer Blade 15 Studio 2020 — Tahoe 26.7.1 / 25G241
 
 [简体中文](README.zh-CN.md)
+
+## Current main — 2026-10-11
+
+`main` now contains the sanitized **26.7.1 / 25G241 / Darwin 25.6.x** Intel-primary baseline, OpenCore 1.0.7, HID V12, MIC22X and OLED **4.7.1**. The owner confirmed Wi-Fi, audio and trackpad after a full cold start. OLED is loaded with verified patch routes; **real 26.7.1 sleep/wake is not yet qualified**. NVIDIA is still disabled in the published EFI; temporary kernel linking does not prove NVIDIA works.
+
+Start with the current [26.7.1 setup and qualification guide](docs/MAIN-26.7.1.md), [reinstall guide](docs/REINSTALL.md) and [machine-readable status](docs/STATUS-26.7.1.json). Personal SMBIOS and Apple-derived dependencies are omitted. A complete clean reinstall has not been rehearsed; this is not a full OS backup or a drop-in universal EFI.
+
+The previous, owner-validated **26.2 / 25C56 OLED-wake version** is preserved unchanged at `843bab0` on [backup/macos-26.2-v61p5-mic22x-20261011](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011). Use that branch for 26.2. Changing EFI alone does not downgrade macOS or restore root patches.
+
+Security stays paired: `amfi=0x80`, SIP `03080000`, SecureBootModel Disabled, AMFIPass disabled. NVIDIA PCI-only is a separate owner-local experiment, not a working driver release; see [its scope](docs/NVIDIA-PCI-ONLY.md).
+
+## Historical 26.2 release notes — not the current main instructions
+
+Everything below records the old 26.2 release. Its sleep successes, binary versions and OS guards do not describe the 26.7.1 EFI now in this checkout. Use the current guide above instead.
 
 **2026-10-09 working snapshot:** refreshed from a new read-only physical ESP backup, with matched MIC22X audio. The owner confirmed working speakers, microphone and Codex dictation after a full cold shutdown/start and a separate microphone-permission repair. The public EFI is sanitized, not a complete private ESP backup. Read [current snapshot and audio setup](docs/CURRENT-SNAPSHOT.md) and [upgrade/NVIDIA assessment](docs/UPGRADE-NVIDIA.md). Neither a macOS upgrade nor an NVIDIA driver is included.
 
@@ -48,11 +62,13 @@ Never overwrite the internal EFI first. Prepare a FAT32 USB test EFI, restore th
 
 ## Start here
 
+For a fresh installation with no old private EFI, start with [reinstall dependency preparation and the pinned root-patch recipe](docs/REINSTALL.md). The preparation tool fills a private staging EFI from hash-pinned upstream inputs; it never writes ESP/root/TCC. End-to-end clean-reinstall qualification remains pending, and 26.7.1 is blocked.
+
 1. Read [Installation](docs/INSTALL.md) end to end.
 2. Read [Root patches and Wi-Fi](docs/ROOT-PATCHES.md) before changing macOS.
 3. Prepare and boot the USB EFI.
 4. Install the wake rescue with `Tools/OLEDWakeRescue/install.sh`.
-5. Run `Tools/verify-v61p5.sh`, then test Apple-menu sleep and a separate real physical-lid close/open cycle.
+5. Run `Tools/Reinstall/reinstall.py audit` with Python 3 and `Tools/verify-v61p5.sh`, then test Apple-menu sleep and a separate real physical-lid close/open cycle.
 6. Expect up to about 12 seconds of green during wake; judge success only after R4 has had time to redraw.
 7. Keep the USB and original private EFI until several cold boots, restarts, menu wakes and lid wakes pass.
 
@@ -79,6 +95,8 @@ The guide is written so another owner of the same RZ09-0330Q configuration can r
 macOS is not automatically cooler on this laptop. The Razer EC/fan policy is designed for Windows, while the scaled 4K HiDPI desktop makes `WindowServer` continuously composite a large framebuffer. See [Thermals and power](docs/THERMALS.md) before changing CPU or fan controls. The OLED rescue agent is event-driven and idle between wake events; it is not a continuous thermal load.
 
 ## Source and licensing
+
+An [offline-tested multi-version OLED source candidate](Sources/RazerOLEDWakeFix-MultiVersion/README.md) preserves legacy patterns and adds a separate 26.7.1 port. It is not installed in this EFI and has not passed real 26.7.1 wake tests. See the [isolated upgrade/post-upgrade plan](docs/UPGRADE-26.7.1.md); research EFIs are not production approval.
 
 Original repository documentation, configuration and custom code are under [MIT](LICENSE). Embedded third-party projects retain their upstream licenses; see [THIRD_PARTY.md](THIRD_PARTY.md). No Apple-derived binary named above is included.
 

@@ -672,9 +672,9 @@
 				<key>ExecutablePath</key>
 				<string>Contents/MacOS/RazerOLEDWakeFix</string>
 				<key>MaxKernel</key>
-				<string>25.2.99</string>
+				<string>25.6.99</string>
 				<key>MinKernel</key>
-				<string>25.2.0</string>
+				<string>25.6.0</string>
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
@@ -726,9 +726,9 @@
 				<key>ExecutablePath</key>
 				<string>Contents/MacOS/IOSkywalkFamily</string>
 				<key>MaxKernel</key>
-				<string></string>
+				<string>25.6.99</string>
 				<key>MinKernel</key>
-				<string>23.0.0</string>
+				<string>25.6.0</string>
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
@@ -744,9 +744,9 @@
 				<key>ExecutablePath</key>
 				<string>Contents/MacOS/IO80211FamilyLegacy</string>
 				<key>MaxKernel</key>
-				<string></string>
+				<string>25.6.99</string>
 				<key>MinKernel</key>
-				<string>23.0.0</string>
+				<string>25.6.0</string>
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
@@ -762,9 +762,9 @@
 				<key>ExecutablePath</key>
 				<string>Contents/MacOS/AirPortBrcmNIC</string>
 				<key>MaxKernel</key>
-				<string></string>
+				<string>25.6.99</string>
 				<key>MinKernel</key>
-				<string>23.0.0</string>
+				<string>25.6.0</string>
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
@@ -1141,9 +1141,9 @@
 				<key>Identifier</key>
 				<string>com.apple.iokit.IOSkywalkFamily</string>
 				<key>MaxKernel</key>
-				<string></string>
+				<string>25.6.99</string>
 				<key>MinKernel</key>
-				<string>23.0.0</string>
+				<string>25.6.0</string>
 				<key>Strategy</key>
 				<string>Exclude</string>
 			</dict>
@@ -1549,7 +1549,7 @@
 				Rg==
 				</data>
 				<key>boot-args</key>
-				<string>-v keepsyms=1 debug=0x100 amfi=0x80 -lilubetaall</string>
+				<string>-v keepsyms=1 debug=0x100 amfi=0x80 -lilubetaall -razer-oled25g241-test</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==

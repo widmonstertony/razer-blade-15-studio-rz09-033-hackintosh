@@ -1,0 +1,11 @@
+# NVIDIA research: PCI-only first, Intel remains primary
+
+[简体中文](NVIDIA-PCI-ONLY.zh-CN.md)
+
+The public main is the pre-experiment working 26.7.1 baseline and still disables the Quadro. The owner separately approved a local PCI-only EFI transaction **after GitHub backup/publication**. It backs up the exact physical ESP and changes only `ACPI > Add > SSDT-DDGPU.aml > Enabled: true → false`, leaving its AML present. Windows/Ubuntu and every other EFI file must remain unchanged. Intel properties, OLED, HID, MIC22X, Wi-Fi, boot arguments, SIP, AMFIPass and BAR settings are preserved. No driver, root patch, active KC, sleep or automatic reboot is part of this stage.
+
+The GPU previously disappeared because SSDT-DDGPU called the firmware power-off method. PCI-only removes that custom power-off table from loading; a **cold start and IORegistry detection of physical `10de:1eb5` are still required**. It may increase heat/power or affect boot/wake. PCI visibility is not Metal acceleration. Back up externally and know how to restore the pre-PCI **26.7.1** EFI if boot fails; a raw ESP backup is not a macOS backup.
+
+Research input: [nullmoth v1.13.0](https://github.com/nullmoth/nvidia-macos-driver/releases/tag/v1.13.0), commit `0960b2ef5dbc4a573056d4c8e042a5bd2e15d651`. The downloaded payload's Tahoe NVAccel remained stale; a local rebuild aligned its allocator ABI with NVRMFB and its intended headless path. Four candidate kexts (`NVRM`, `NVRMFB`, `NVRMAGDC`, `NVAccel`) passed a **temporary** exact-build kernel-collection link. Active Boot/System/Aux KC hashes remained unchanged and no driver was installed. Private ABI checks and CPU-only tests do not prove live GPU execution.
+
+After PCI visibility passes, a separately reviewed driver installation must preserve recoverability and prove real NVIDIA Metal compute/render/readback, Intel internal display, Wi-Fi/audio/HID, multiple cold boots and eventual wake. An Intel workload, a bundle loading in a private process or a successful kmutil exit is not NVIDIA qualification. No CUDA or transparent all-app offload is promised. Do not use the upstream full installer blindly: its security/BAR/root changes are outside PCI-only approval. No NVIDIA binary or owner-specific privileged writer is distributed by this repository.

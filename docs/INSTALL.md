@@ -1,5 +1,11 @@
 # Installation — V61-P5 native lid + R4 OLED wake build
 
+<!-- CURRENT-MAIN-NOTICE-20261011 -->
+
+Current main is 26.7.1 / 25G241. The material below preserves earlier 26.2 or pre-port history, not current execution instructions. Follow the [current complete setup/rebuild guide](MAIN-26.7.1.md). New-build Wi-Fi/audio/trackpad and OLED loading/routes passed; new-build sleep and clean reinstall remain pending. Use the backup branch for 26.2.
+
+## Historical record (original versions/status retained)
+
 [简体中文](INSTALL.zh-CN.md)
 
 Read this entire page before writing an EFI partition. This procedure is intentionally conservative because the public configuration is sanitized and omits files that cannot be redistributed.
@@ -19,7 +25,7 @@ ioreg -lw0 | grep -E 'DisplayVendorID|DisplayProductID'
 
 Proceed only when the machine is the RZ09-0330Q with BIOS 1.06, macOS 26.2 build 25C56 / Darwin 25.2.x, UHD 630 `8086:9BC4`, and Samsung panel `4C83:A029`. The install script also enforces the OS build and the display helper enforces the panel and exact display modes.
 
-This guide is reproducible for another owner of that exact target, but the repository cannot supply a personal Apple identity, Apple-derived Wi-Fi/filesystem binaries, a Windows BCD or exact-build root-patched system files. Keep your own working private EFI available as the legal source for omitted files and as the rollback source. Never copy another person's serial, UUID, ROM or complete ESP image.
+This guide targets another owner of that exact hardware, but a complete fresh reinstall has not yet been rehearsed. The repository cannot supply a personal Apple identity, Apple-derived Wi-Fi/filesystem binaries, Windows BCD or a patched system image. If no old EFI exists, use the hash-pinned [reinstall preparation workflow](REINSTALL.md) to fetch omitted inputs into a private workspace. Never copy another person's serial, UUID, ROM or complete ESP image.
 
 ## 2. Make two recoverable backups
 
@@ -38,7 +44,7 @@ Copy this repository's `EFI` directory to the root of the USB volume. Do not wri
 
 ## 4. Restore the deliberately omitted files
 
-Copy these files from your own legally obtained, currently working private EFI into the same paths on the USB:
+Use [REINSTALL.md](REINSTALL.md) to prepare these files from fixed upstream inputs without an old EFI, or copy matching legally obtained files from your own working private EFI into the same paths on the USB:
 
 ```text
 EFI/OC/Kexts/IOSkywalkFamily.kext

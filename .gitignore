@@ -8,3 +8,5 @@ SMBIOS.txt
 private/
 vendor/
 Sources/RazerOLEDWakeFix/build/
+.reinstall-private/
+Sources/RazerOLEDWakeFix-MultiVersion/build/

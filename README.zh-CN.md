@@ -1,6 +1,20 @@
-# Razer Blade 15 Studio 2020 黑苹果 — OLED V61-P5 + R4 / MIC22X
+# Razer Blade 15 Studio 2020 — Tahoe 26.7.1 / 25G241
 
 [English](README.md)
+
+## 当前 main — 2026-10-11
+
+`main` 现保存脱敏的 **26.7.1 / 25G241 / Darwin 25.6.x** Intel 主显示基线：OpenCore 1.0.7、HID V12、MIC22X 和 OLED **4.7.1**。机主已在完整关机再开机后确认 Wi-Fi、声音、触控板正常。OLED 已加载、补丁路由验证就绪；**26.7.1 真实睡眠唤醒尚未验收**。公开 EFI 仍禁用 NVIDIA；临时内核链接通过不代表独显驱动可用。
+
+从当前 [26.7.1 配置与验收指南](docs/MAIN-26.7.1.zh-CN.md)、[重装指南](docs/REINSTALL.zh-CN.md)、[精确状态](docs/STATUS-26.7.1.json)开始。个人 SMBIOS、Apple 衍生依赖未上传。完整全新重装尚未演练；这不是完整系统备份，也不是通用即插即用 EFI。
+
+原来已验证 OLED 唤醒的 **26.2 / 25C56 版本**已按原提交 `843bab0` 保存到 [backup/macos-26.2-v61p5-mic22x-20261011](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011)。26.2 请用该分支。更换 EFI 不能降级系统，也不能恢复根补丁。
+
+安全设置仍配对保留：`amfi=0x80`、SIP `03080000`、SecureBootModel Disabled、AMFIPass 禁用。NVIDIA PCI-only 是独立的机主本地实验，不是可用驱动版本，见[实验范围](docs/NVIDIA-PCI-ONLY.zh-CN.md)。
+
+## 以下为历史 26.2 发布记录，不是当前 main 安装指引
+
+以下内容保留旧版本记录，其中睡眠成功、二进制版本及系统限制不代表本目录的 26.7.1 EFI。请先使用上方新版指南。
 
 **2026-10-09 可用状态快照：**从新一轮只读实体 ESP 备份刷新，配对加入 MIC22X 音频。机主确认完整关机再开机后扬声器、麦克风可用；另行修复应用麦克风授权后，Codex 听写也可用。公开 EFI 已脱敏，不是完整私有 ESP 镜像。请阅读[当前快照与音频配置](docs/CURRENT-SNAPSHOT.zh-CN.md)和[升级 / NVIDIA 评估](docs/UPGRADE-NVIDIA.zh-CN.md)。此次没有升级 macOS，也没有加入 NVIDIA 驱动。
 
@@ -48,6 +62,8 @@
 
 ## 从这里开始
 
+全新安装、没有旧私有 EFI 时，先读[重装依赖准备与固定根补丁配方](docs/REINSTALL.zh-CN.md)。准备工具从固定来源下载并校验缺失依赖，只生成私人暂存 EFI，不写 ESP/系统根目录/TCC；完整重装验收仍待完成，26.7.1 暂时拒绝使用旧方案。
+
 1. 从头读完[安装说明](docs/INSTALL.zh-CN.md)。
 2. 改动 macOS 前先读[根补丁与 Wi-Fi](docs/ROOT-PATCHES.zh-CN.md)。
 3. 制作并启动 U 盘测试 EFI。
@@ -79,6 +95,8 @@
 这台机器在 macOS 下不会天然更冷。Razer 的 EC/风扇策略主要为 Windows 设计，而缩放后的 4K HiDPI 桌面会让 `WindowServer` 长期合成较大的 framebuffer。改 CPU 或风扇参数前先读[温度与功耗](docs/THERMALS.zh-CN.md)。OLED 自动服务只在唤醒事件后工作，平时处于空闲状态，不是持续发热源。
 
 ## 源码和授权
+
+另有[已做离线检查的多版本 OLED 源码候选](Sources/RazerOLEDWakeFix-MultiVersion/README.zh-CN.md)，保留旧版匹配并加入独立的 26.7.1 移植；没有装入此 EFI，也尚未通过新版真实唤醒测试。见[隔离升级与升级后清单](docs/UPGRADE-26.7.1.zh-CN.md)；研究 EFI 不是正式升级许可。
 
 仓库原创文档、配置和自定义代码采用 [MIT](LICENSE)。第三方组件继续遵守各自上游许可证，见 [THIRD_PARTY.md](THIRD_PARTY.md)。上面列出的 Apple 派生二进制均未包含。
 

@@ -1,5 +1,11 @@
 # Root patches, Broadcom Wi-Fi and audio
 
+<!-- CURRENT-MAIN-NOTICE-20261011 -->
+
+Current main is 26.7.1 / 25G241. The material below preserves earlier 26.2 or pre-port history, not current execution instructions. Follow the [current complete setup/rebuild guide](MAIN-26.7.1.md). New-build Wi-Fi/audio/trackpad and OLED loading/routes passed; new-build sleep and clean reinstall remain pending. Use the backup branch for 26.2.
+
+## Historical record (original versions/status retained)
+
 [简体中文](ROOT-PATCHES.zh-CN.md)
 
 The validated machine uses macOS Tahoe 26.2 build 25C56 plus exact-build root patches for Broadcom BCM4360 Wi-Fi and internal audio. These are separate from the EFI and are the most fragile part of the installation.
@@ -21,6 +27,8 @@ The binaries are Apple-derived and are not included. The patched System volume i
 The tested system used a temporary, unofficial OpenCore-Patcher 3.0.0 build from the [tahoe-patchset project](https://github.com/lzhoang2801/tahoe-patchset). It is not an official guarantee from the [OpenCore Legacy Patcher project](https://github.com/dortania/OpenCore-Legacy-Patcher), and it must not be assumed compatible with another Tahoe build.
 
 ## Exact-build workflow
+
+For pinned source commits, the fork-specific support-image hash, the exact file operation plan, a no-old-EFI dependency preparer and clean-install qualification limits, follow [REINSTALL.md](REINSTALL.md). This project does not yet release an automatic root-writer.
 
 1. Confirm `sw_vers -buildVersion` returns `25C56`.
 2. Back up the complete private EFI and macOS data.

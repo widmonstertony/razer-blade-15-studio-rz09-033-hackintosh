@@ -1,5 +1,11 @@
 # OLED wake design and validation
 
+<!-- CURRENT-MAIN-NOTICE-20261011 -->
+
+Current main is 26.7.1 / 25G241. The material below preserves earlier 26.2 or pre-port history, not current execution instructions. Follow the [current complete setup/rebuild guide](MAIN-26.7.1.md). New-build Wi-Fi/audio/trackpad and OLED loading/routes passed; new-build sleep and clean reinstall remain pending. Use the backup branch for 26.2.
+
+## Historical record (original versions/status retained)
+
 [简体中文](OLED-WAKE.zh-CN.md)
 
 ## The failure in plain language

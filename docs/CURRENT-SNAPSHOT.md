@@ -1,5 +1,11 @@
 # Current working snapshot and MIC22X audio — 2026-10-09
 
+<!-- CURRENT-MAIN-NOTICE-20261011 -->
+
+Current main is 26.7.1 / 25G241. The material below preserves earlier 26.2 or pre-port history, not current execution instructions. Follow the [current complete setup/rebuild guide](MAIN-26.7.1.md). New-build Wi-Fi/audio/trackpad and OLED loading/routes passed; new-build sleep and clean reinstall remain pending. Use the backup branch for 26.2.
+
+## Historical record (original versions/status retained)
+
 [简体中文](CURRENT-SNAPSHOT.zh-CN.md)
 
 This snapshot was exported from a new read-only physical ESP image. It preserves the working V61-P5/R4/HID V12 configuration and adds the exact MIC22X audio binary from that image. The complete image stays private. Files already in the redistributable EFI allowlist were compared against it; only AppleALC changed. Unused ACPI files, `.before-*`, `FSCK*`, Windows/Ubuntu boot data and private identity are deliberately not published. No physical EFI or installed system was changed during publication.

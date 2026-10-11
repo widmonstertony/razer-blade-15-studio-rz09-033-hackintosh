@@ -47,9 +47,17 @@ verify_sha256() {
 	fi
 }
 
-verify_expect "macOS 26.2" test "$(/usr/bin/sw_vers -productVersion)" = "26.2"
-verify_expect "build 25C56" test "$(/usr/bin/sw_vers -buildVersion)" = "25C56"
-verify_expect "Darwin 25.2.x" test "${$(/usr/bin/uname -r):r}" = "25.2"
+verify_expect "macOS 26.7.1" test "$(/usr/bin/sw_vers -productVersion)" = "26.7.1"
+verify_expect "build 25G241" test "$(/usr/bin/sw_vers -buildVersion)" = "25G241"
+verify_expect "Darwin 25.6.x" test "${$(/usr/bin/uname -r):r}" = "25.6"
+verify_state="$(/usr/sbin/ioreg -r -c RazerOLEDWakeFix -l -w0)"
+for verify_marker in REL-471-2026-10-11 \
+    applied-verified-s3-edp14-rate-select-v61 \
+    all-v60-routes-plus-edp14-rate-selector-call-site-verified \
+    verified-single-kc-branch-stub-to-canonical-IOSleep
+do
+    verify_expect "OLED runtime $verify_marker" test "${verify_state#*$verify_marker}" != "$verify_state"
+done
 verify_expect "public config parses" /usr/bin/plutil -lint "$verify_config"
 verify_expect "OLED kext is present in the repository" test -f "$verify_root/EFI/OC/Kexts/RazerOLEDWakeFix.kext/Contents/MacOS/RazerOLEDWakeFix"
 verify_sha256 "paired MIC22X AppleALC checksum" "$verify_root/EFI/OC/Kexts/AppleALC.kext/Contents/MacOS/AppleALC" 6f566fa8b58948520adb58472a3bee89a65f4f497a891922a346e6ddf2a0f3b1

@@ -1,5 +1,11 @@
 # 安装说明 — V61-P5 原生合盖 + R4 OLED 唤醒版本
 
+<!-- CURRENT-MAIN-NOTICE-20261011 -->
+
+当前 main 为 26.7.1 / 25G241，下面保留的是早期 26.2 或移植前记录，不是当前执行指引。请以[新版完整配置/重建指南](MAIN-26.7.1.zh-CN.md)为准。新版 Wi-Fi/音频/触控板已确认，OLED 加载/路由通过，但新版睡眠及全新重装未验收。26.2 使用备份分支。
+
+## 历史记录（版本和状态以原记录为准）
+
 [English](INSTALL.md)
 
 写入任何 EFI 分区前，请先完整读完本页。公开配置已经脱敏，而且故意省略了不能重新分发的文件，所以不能直接覆盖使用。
@@ -19,7 +25,7 @@ ioreg -lw0 | grep -E 'DisplayVendorID|DisplayProductID'
 
 只有在机器为 RZ09-0330Q、BIOS 1.06、macOS 26.2 build 25C56 / Darwin 25.2.x、UHD 630 `8086:9BC4`、Samsung 屏幕 `4C83:A029` 时才继续。安装脚本还会强制检查系统版本，显示工具会强制检查屏幕和精确分辨率。
 
-另一位完全匹配该目标的使用者可以按此指南复现，但仓库不能提供个人 Apple 身份、Apple 派生 Wi-Fi/文件系统二进制、Windows BCD 或精确 build 的系统根补丁文件。你必须保留自己的可用私有 EFI，把它作为省略文件的合法来源和回滚来源。绝不能复制他人的序列号、UUID、ROM 或完整 ESP 镜像。
+本指南以另一位完全匹配该目标的使用者为对象，但尚未演练一次从空白系统开始的完整重装。仓库不能提供个人 Apple 身份、Apple 派生 Wi-Fi/文件系统二进制、Windows BCD 或已打补丁的系统镜像。没有旧 EFI 时，可以按[重装依赖准备流程](REINSTALL.zh-CN.md)从固定上游获取缺失文件到私人工作目录。绝不能复制他人的序列号、UUID、ROM 或完整 ESP 镜像。
 
 ## 2. 做两份可恢复备份
 
@@ -38,7 +44,7 @@ ioreg -lw0 | grep -E 'DisplayVendorID|DisplayProductID'
 
 ## 4. 恢复故意省略的文件
 
-从你自己合法获得且目前可用的私有 EFI，把下面文件复制到 U 盘相同路径：
+先按[重装流程](REINSTALL.zh-CN.md)从固定上游准备下面文件，不需要旧 EFI；或者从自己合法取得且目前可用的私有 EFI 复制到 U 盘相同路径：
 
 ```text
 EFI/OC/Kexts/IOSkywalkFamily.kext

@@ -15,10 +15,28 @@ rescue_cleanup() {
 }
 trap rescue_cleanup EXIT
 
-if [[ "$(/usr/bin/sw_vers -productVersion)" != 26.2 || \
-      "$(/usr/bin/sw_vers -buildVersion)" != 25C56 || \
-      "$(/usr/bin/uname -r)" != 25.2.* ]]; then
-	print -u2 "Refusing installation: V61-P5/R4 is validated only on macOS 26.2 (25C56), Darwin 25.2.x."
+if [[ "$(/usr/bin/sw_vers -productVersion)" == 26.7.1 && \
+      "$(/usr/bin/sw_vers -buildVersion)" == 25G241 && \
+      "$(/usr/bin/uname -r)" == 25.6.* ]]; then
+	[[ "${1:-}" == --accept-unvalidated-wake ]] || {
+		print -u2 "26.7.1 wake is not qualified. Review docs/MAIN-26.7.1.md; explicit --accept-unvalidated-wake required."
+		exit 65
+	}
+	rescue_driver_state="$(/usr/sbin/ioreg -r -c RazerOLEDWakeFix -l -w 0)"
+	for rescue_marker in REL-471-2026-10-11 \
+		all-v60-routes-plus-edp14-rate-selector-call-site-verified \
+		applied-verified-s3-edp14-rate-select-v61 \
+		verified-single-kc-branch-stub-to-canonical-IOSleep
+	do
+		[[ "$rescue_driver_state" == *"$rescue_marker"* ]] || {
+			print -u2 "Refusing: exact OLED candidate is not fully armed ($rescue_marker). Do not sleep."
+			exit 65
+		}
+	done
+elif [[ "$(/usr/bin/sw_vers -productVersion)" != 26.2 || \
+        "$(/usr/bin/sw_vers -buildVersion)" != 25C56 || \
+        "$(/usr/bin/uname -r)" != 25.2.* ]]; then
+	print -u2 "Refusing installation: only exact 26.2/25C56 or explicitly accepted 26.7.1/25G241 is supported."
 	exit 65
 fi
 
@@ -57,6 +75,7 @@ rescue_temp_plist="$(/usr/bin/mktemp /private/tmp/razer-oled-wake-rescue.XXXXXX)
 /bin/rm -f "$rescue_temp_plist"
 rescue_temp_plist=""
 
+/bin/launchctl enable "gui/$UID/$rescue_label"
 /bin/launchctl bootout "gui/$UID" "$rescue_plist" >/dev/null 2>&1 || true
 /bin/launchctl bootstrap "gui/$UID" "$rescue_plist"
 /bin/launchctl kickstart -k "gui/$UID/$rescue_label"

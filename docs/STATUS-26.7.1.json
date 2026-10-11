@@ -1,0 +1,48 @@
+{
+  "snapshotDate": "2026-10-11",
+  "macOS": "26.7.1",
+  "build": "25G241",
+  "darwin": "25.6",
+  "openCore": "1.0.7",
+  "publicEfiSanitized": true,
+  "ownerConfirmedAfterColdStart": [
+    "wifi",
+    "audio",
+    "trackpad"
+  ],
+  "cleanReinstallQualified": false,
+  "oled": {
+    "version": "4.7.1",
+    "binarySha256": "e3f30cff67dd6523f083927a9fb11e9c42c998d7b9d5f6ee0c1d502bba4ffa01",
+    "framebufferUuid": "7E294F0F-852E-3252-B54D-61D9A7BBE6B2",
+    "framebufferSha256": "8ddf3c6d526ed73ac827d627f8ec2708a101784bdd56c5dbbd3e20caaf6bf61a",
+    "bootPatchQualified": true,
+    "sleepWakeQualified": false,
+    "R4InstalledOnOwnerMachine": true,
+    "researchFlagRetained": true,
+    "bootQualifiedSourceBinarySha256": "1eeac97d8f68d99871c939cfee97f195a59848213694034bc3d2f910db42151d"
+  },
+  "rootPatches": {
+    "commit": "225a713f0da5bedadaf8bc32b9b883d1692f9d64",
+    "version": "3.0.0",
+    "unofficialFork": true,
+    "supportPackage": "1.9.6",
+    "sets": [
+      "Modern Wireless",
+      "Modern Audio"
+    ],
+    "exactKdk": "26.7.1 / 25G241",
+    "kernelCollectionAndSnapshotCompleted": true
+  },
+  "nvidia": {
+    "disabledInPublicEfi": true,
+    "driverInstalled": false,
+    "temporaryKernelCollectionLinkPassed": true,
+    "runtimeQualified": false,
+    "activeKernelCollectionsChangedByPreflight": false
+  },
+  "previous26_2Branch": "backup/macos-26.2-v61p5-mic22x-20261011",
+  "previous26_2Commit": "843bab0ed57a9b7dc8fd06e8332f708b9b88277d",
+  "fullOsOrPersonalDataBackup": false,
+  "publicDebugMetadataStripped": true
+}

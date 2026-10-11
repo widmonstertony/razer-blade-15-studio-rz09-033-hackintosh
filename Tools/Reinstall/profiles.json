@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "efiBuild": "25G241",
+  "profiles": {
+    "25C56": {
+      "macOS": "26.2",
+      "darwin": "25.2",
+      "kdkVersion": "26.2",
+      "qualification": "owner-validated-existing-installation-not-clean-reinstall-tested",
+      "hardware": "RZ09-0330Q / BIOS 1.06 / i7-10875H / physical 8086:9bc4 / PCH 8086:068d / Samsung 4c83:a029 / BCM4360 14e4:43a0 / ALC298",
+      "framebufferUuid": "0A970005-966B-39C9-9D30-1E8F9BF6F86A",
+      "patcherCommit": "225a713f0da5bedadaf8bc32b9b883d1692f9d64",
+      "patcherSource": "https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/tree/225a713f0da5bedadaf8bc32b9b883d1692f9d64",
+      "supportPackage": "1.9.6",
+      "rootSets": ["Modern Wireless", "Modern Audio"],
+      "rootFiles": {
+        "/usr/libexec/wifip2pd": "00491767d8080afc3144acdc45c578e332080a048417b75d8084303d68914b78",
+        "/System/Library/PrivateFrameworks/IO80211.framework/Versions/A/IO80211": "601b1df0466d84b15e2c610590fb1aebe70681e54f4fc9e784955fb8192085d6",
+        "/System/Library/PrivateFrameworks/WiFiPeerToPeer.framework/Versions/A/WiFiPeerToPeer": "8d577e72aecddf039938a7a4d80f9fe854d6ff0153402ed593c52aa27077e86f",
+        "/System/Library/Extensions/AppleHDA.kext/Contents/MacOS/AppleHDA": "6bf19c385a1212160be8a01fd7903aaa0416407e0b52e949f49d04cee4c65de7"
+      },
+      "supportSources": {
+        "wireless": "13.7.2-25",
+        "audio": "26.0 Beta 1"
+      },
+      "kdk": "26.2 / 25C56 (must be separately obtained from Apple; no nearest-build substitution)",
+      "security": {
+        "SecureBootModel": "Disabled",
+        "csr-active-config-hex": "03080000",
+        "requiredBootArgs": ["amfi=0x80", "-lilubetaall"],
+        "AMFIPassEnabled": false
+      }
+    },
+    "25G241": {
+      "macOS": "26.7.1",
+      "darwin": "25.6",
+      "kdkVersion": "26.7.1",
+      "qualification": "owner-confirmed-boot-wifi-audio-trackpad-oled-wake-pending-not-clean-reinstall-tested",
+      "framebufferUuid": "7E294F0F-852E-3252-B54D-61D9A7BBE6B2",
+      "reason": "Root patch/KC/snapshot and owner cold-start Wi-Fi/audio/trackpad passed. OLED 4.7.1 loaded with verified KC-stub/patch routes and R4 is running; real sleep/wake and clean reinstall remain pending.",
+      "kdkImageSha256": "9045a521c8ae362d4cb2cc54701b03462686e0069518a0b66cfe2028f87dfe9b",
+      "installerSha256": "ca854f49dfdedbe78492c26d0e4172ee4d37573e2d375ca90c083d7615b6f48a",
+      "framebufferSha256": "8ddf3c6d526ed73ac827d627f8ec2708a101784bdd56c5dbbd3e20caaf6bf61a"
+    }
+  },
+  "rootRecipe": [
+    {"set":"Modern Wireless", "source":"13.7.2-25", "method":"overwrite", "target":"/usr/libexec/wifip2pd"},
+    {"set":"Modern Wireless", "source":"13.7.2-25", "method":"merge", "target":"/System/Library/PrivateFrameworks/IO80211.framework"},
+    {"set":"Modern Wireless", "source":"13.7.2-25", "method":"merge", "target":"/System/Library/PrivateFrameworks/WiFiPeerToPeer.framework"},
+    {"set":"Modern Audio", "source":"26.0 Beta 1", "method":"overwrite", "target":"/System/Library/Extensions/AppleHDA.kext"}
+  ],
+  "assets": [
+    {
+      "name": "IOSkywalkFamily-v1.2.0.zip",
+      "url": "https://raw.githubusercontent.com/lzhoang2801/OpenCore-Legacy-Patcher/225a713f0da5bedadaf8bc32b9b883d1692f9d64/payloads/Kexts/Wifi/IOSkywalkFamily-v1.2.0.zip",
+      "sha256": "1e12b7ef42f55b39ea54ada97b46331220668b2c48a28656e9875c5145fe2479",
+      "kind": "kext-zip",
+      "bundle": "IOSkywalkFamily.kext"
+    },
+    {
+      "name": "IO80211FamilyLegacy-v1.0.0.zip",
+      "url": "https://raw.githubusercontent.com/lzhoang2801/OpenCore-Legacy-Patcher/225a713f0da5bedadaf8bc32b9b883d1692f9d64/payloads/Kexts/Wifi/IO80211FamilyLegacy-v1.0.0.zip",
+      "sha256": "e681dcc76a2cd2cea4b0ad5f27a3c816055fde3cdccd890dd10a3e2c84e96d93",
+      "kind": "kext-zip",
+      "bundle": "IO80211FamilyLegacy.kext"
+    },
+    {
+      "name": "apfs_aligned.efi",
+      "url": "https://raw.githubusercontent.com/lzhoang2801/OpenCore-Legacy-Patcher/225a713f0da5bedadaf8bc32b9b883d1692f9d64/payloads/Drivers/apfs_aligned.efi",
+      "sha256": "1663fa54103cf808b45fda3f0385626d1f1899a9ed8258d21a827db4426ed408",
+      "kind": "driver"
+    },
+    {
+      "name": "HfsPlus.efi",
+      "url": "https://raw.githubusercontent.com/acidanthera/OcBinaryData/c2a98980d30e39a571a2843ab26aa8d2b9188094/Drivers/HfsPlus.efi",
+      "sha256": "a55b5fff36578864ba6792c4c6369c71f6f35b61dd5a853ddf8583cd36c31d8f",
+      "kind": "driver"
+    },
+    {
+      "name": "Universal-Binaries.dmg",
+      "url": "https://github.com/lzhoang2801/PatcherSupportPkg/releases/download/1.9.6/Universal-Binaries.dmg",
+      "sha256": "fcf7c92d368db60a209da370592c288ff9314f425ec8affbde67823f79ffa767",
+      "kind": "root-support",
+      "bytes": 948923392
+    }
+  ]
+}
