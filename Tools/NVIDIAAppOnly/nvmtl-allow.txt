@@ -1,0 +1,3 @@
+# NVIDIA app-only Metal access; WindowServer stays on Intel.
+-WindowServer
+*

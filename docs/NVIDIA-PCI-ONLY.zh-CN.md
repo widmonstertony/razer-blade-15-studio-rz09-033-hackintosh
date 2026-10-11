@@ -2,6 +2,8 @@
 
 [English](NVIDIA-PCI-ONLY.md)
 
+这是早期阶段记录：随后 PCI-only、受控驱动安装及一次真正的 NVIDIA 小负载 Metal 测试均已通过。当前范围、警告和可选自动应用服务见 [NVIDIA-APP-ONLY.zh-CN.md](NVIDIA-APP-ONLY.zh-CN.md)。默认公开 EFI 仍禁用 NVIDIA。
+
 公开 main 是实验前的可用 26.7.1 基线，仍关闭 Quadro。机主另外同意在 **GitHub 备份/发布后**执行本地 PCI-only EFI 事务：现场备份精确实体 ESP，只改 `ACPI > Add > SSDT-DDGPU.aml > Enabled: true → false`，保留 AML 文件。Windows/Ubuntu 及其他 EFI 文件必须不变，Intel 属性、OLED、HID、MIC22X、无线、启动参数、SIP、AMFIPass、BAR 设置均保留。本阶段不安装驱动、不打根补丁、不改活动内核集合、不睡眠、不自动重启。
 
 此前独显消失是 SSDT-DDGPU 调用固件断电方法。PCI-only 只是让自定义断电表不加载；仍需**完整关机再开机，并在 IORegistry 看到物理 `10de:1eb5`**。可能增加发热/耗电或影响启动/睡眠。PCI 可见不等于 Metal 加速。保留外部备份及恢复实验前 **26.7.1** EFI 的路径；原始 ESP 镜像不是 macOS 备份。

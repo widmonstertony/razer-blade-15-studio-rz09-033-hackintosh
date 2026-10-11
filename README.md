@@ -4,13 +4,15 @@
 
 ## Current main — 2026-10-11
 
-`main` now contains the sanitized **26.7.1 / 25G241 / Darwin 25.6.x** Intel-primary baseline, OpenCore 1.0.7, HID V12, MIC22X and OLED **4.7.1**. The owner confirmed Wi-Fi, audio and trackpad after a full cold start. OLED is loaded with verified patch routes; **real 26.7.1 sleep/wake is not yet qualified**. NVIDIA is still disabled in the published EFI; temporary kernel linking does not prove NVIDIA works.
+`main` contains the sanitized **26.7.1 / 25G241 / Darwin 25.6.x** Intel-primary baseline, OpenCore 1.0.7, HID V12, MIC22X and OLED **4.7.1**. The owner confirmed Wi-Fi, audio and trackpad after a full cold start. OLED is loaded with verified patch routes; **real 26.7.1 sleep/wake is not yet qualified**, particularly with NVIDIA active. The default public EFI still disables NVIDIA.
+
+**New NVIDIA evidence:** the owner-local NVRM + rebuilt Tahoe NVAccel installation initialized the Quadro RTX 5000 once, reported 16 GiB VRAM, and passed real NVIDIA Metal integer compute and offscreen rendering with Intel primary 10-bit preserved. See [app-only NVIDIA setup, limits and recovery](docs/NVIDIA-APP-ONLY.md). An optional startup service and all-app Metal exposure policy are supplied in `Tools/NVIDIAAppOnly`; installation authentication and a subsequent cold-boot test are still pending. This is not a CUDA, universal app-compatibility or sleep claim, and it is not installed by copying the default EFI.
 
 Start with the current [26.7.1 setup and qualification guide](docs/MAIN-26.7.1.md), [reinstall guide](docs/REINSTALL.md) and [machine-readable status](docs/STATUS-26.7.1.json). Personal SMBIOS and Apple-derived dependencies are omitted. A complete clean reinstall has not been rehearsed; this is not a full OS backup or a drop-in universal EFI.
 
 The previous, owner-validated **26.2 / 25C56 OLED-wake version** is preserved unchanged at `843bab0` on [backup/macos-26.2-v61p5-mic22x-20261011](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011). Use that branch for 26.2. Changing EFI alone does not downgrade macOS or restore root patches.
 
-Security stays paired: `amfi=0x80`, SIP `03080000`, SecureBootModel Disabled, AMFIPass disabled. NVIDIA PCI-only is a separate owner-local experiment, not a working driver release; see [its scope](docs/NVIDIA-PCI-ONLY.md).
+Security stays paired: `amfi=0x80`, SIP `03080000`, SecureBootModel Disabled, AMFIPass disabled. NVIDIA PCI-only is a [completed earlier experimental stage](docs/NVIDIA-PCI-ONLY.md); current bounded Metal evidence and the optional startup overlay are documented separately above.
 
 ## Historical 26.2 release notes — not the current main instructions
 

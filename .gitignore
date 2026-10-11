@@ -10,3 +10,5 @@ vendor/
 Sources/RazerOLEDWakeFix/build/
 .reinstall-private/
 Sources/RazerOLEDWakeFix-MultiVersion/build/
+__pycache__/
+*.py[cod]
