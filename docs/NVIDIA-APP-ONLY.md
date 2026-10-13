@@ -4,6 +4,8 @@
 
 ## Result as of 2026-10-11
 
+**2026-10-12 update:** I observed successful automatic initialization after restoring NVIDIA, but the following real sleep/wake failed with a WindowServer watchdog and Intel scheduler wait. This branch backs up my separate NVIDIA-off configuration, whose one menu wake succeeded with OLED 4.7.2, original R4 and DDGPU enabled. See [my latest results and recovery boundary](STATE-2026-10-12.md). The sections below retain earlier compute/installation evidence; their pending-test statements are historical, not the latest sleep status. Do not run this overlay installer to restore the NVIDIA-off backup.
+
 Exact owner machine: RZ09-0330Q / BIOS 1.06 / i7-10875H / Intel UHD 630 `8086:9bc4` / Quadro RTX 5000 Max-Q TU104 `10de:1eb5`, subsystem `1a58:200a` / Samsung OLED `4c83:a029` / macOS 26.7.1 `25G241`.
 
 The owner-local driver installation is complete. One manually authorized GSP/RM initialization succeeded and returned a real 16 GiB VRAM query. A subsequent one-shot Metal suite explicitly selected Quadro PCI `10de:1eb5`, not Intel: three runs of 65,536 integers and all 4,096 offscreen RGBA pixels were correct. Independent post-checks retained Intel primary 10-bit, installed bytes/signatures, active collections and security; no new kernel/WindowServer crash-report filenames were found. These are small correctness results, not full stability or performance qualification.

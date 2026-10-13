@@ -40,7 +40,7 @@ razer_common=(
 	-DDRIVER_PRIVATE
 	-DAPPLE
 	-DNeXT
-	-DMODULE_VERSION=4.7.1
+	-DMODULE_VERSION=4.7.2
 	-DPRODUCT_NAME=RazerOLEDWakeFix
 	-isysroot "$razer_macos_sdk"
 	-I "$razer_kernel_sdk/Headers"

@@ -5,10 +5,12 @@
   "strippedPublicVariantBootTested": false,
   "binaries": {
     "EFI/OC/Kexts/RazerOLEDWakeFix.kext/Contents/MacOS/RazerOLEDWakeFix": {
-      "sourceSha256": "1eeac97d8f68d99871c939cfee97f195a59848213694034bc3d2f910db42151d",
-      "publicSha256": "e3f30cff67dd6523f083927a9fb11e9c42c998d7b9d5f6ee0c1d502bba4ffa01",
+      "sourceSha256": "7de834428721144ffc53d693d736387d1d1e1386697a35511a40a7fbd1a4c4c1",
+      "publicSha256": "f748dce0563e30c3a460661d9cd7f1d93ee8751840f9d9bcf1329326291fc604",
       "nonDebugSectionsIdentical": true,
-      "externalSymbolsIdentical": true
+      "externalSymbolsIdentical": true,
+      "version": "4.7.2",
+      "singleMenuWakePassedOnPrivateBytesWithNvidiaOff": true
     },
     "EFI/OC/Kexts/VoodooI2C.kext/Contents/MacOS/VoodooI2C": {
       "sourceSha256": "83e7f84498bd68af481ee129ed3851cd690237abf4acc5027055e25a77658ff3",

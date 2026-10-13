@@ -4,7 +4,7 @@ extern kern_return_t RazerOLEDWakeFix_kern_start(kmod_info_t *ki, void *data);
 extern kern_return_t RazerOLEDWakeFix_kern_stop(kmod_info_t *ki, void *data);
 
 __attribute__((visibility("default")))
-KMOD_EXPLICIT_DECL(com.tonytan.RazerOLEDWakeFix, "4.7.1",
+KMOD_EXPLICIT_DECL(com.tonytan.RazerOLEDWakeFix, "4.7.2",
 	RazerOLEDWakeFix_kern_start, RazerOLEDWakeFix_kern_stop)
 
 __private_extern__ kmod_start_func_t *_realmain = 0;

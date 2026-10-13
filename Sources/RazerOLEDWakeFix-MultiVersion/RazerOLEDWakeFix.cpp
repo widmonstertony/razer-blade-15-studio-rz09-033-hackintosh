@@ -10,6 +10,7 @@
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include "DriverProfiles.hpp"
 #include "PatchPlan.hpp"
+#include "SleepPhaseGate.hpp"
 
 // XNU's wired-page no-fault copier: a missing translation returns a short read
 // instead of dereferencing an unverified KC branch/GOT address.
@@ -2972,7 +2973,11 @@ static void wrapSetPowerWellState(void *controller, void *framebuffer,
 	originalSetPowerWellState(controller, framebuffer, enable);
 	if (!enable)
 		return;
-	if (panelNeedsD0Precondition != 0) {
+	if (RazerOLEDSleepPhaseGate::allowPostPowerWellRestore(
+		static_cast<unsigned>(getKernelMinorVersion()),
+		panelNeedsD0Precondition != 0, systemSleepPending != 0,
+		southChickenResumeBoundaryObserved != 0,
+		systemTerminationPending != 0)) {
 		(void)restoreColdPchRawClock(controller,
 			"post-native-power-well-enable");
 		(void)restoreDDIAFourLaneCapability(controller,

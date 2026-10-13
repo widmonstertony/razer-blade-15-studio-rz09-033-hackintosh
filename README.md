@@ -2,15 +2,17 @@
 
 [简体中文](README.zh-CN.md)
 
-## Current main — 2026-10-11
+## NVIDIA-off backup — 2026-10-12
 
-`main` contains the sanitized **26.7.1 / 25G241 / Darwin 25.6.x** Intel-primary baseline, OpenCore 1.0.7, HID V12, MIC22X and OLED **4.7.1**. The owner confirmed Wi-Fi, audio and trackpad after a full cold start. OLED is loaded with verified patch routes; **real 26.7.1 sleep/wake is not yet qualified**, particularly with NVIDIA active. The default public EFI still disables NVIDIA.
+I maintain this configuration for my Razer Blade 15 Studio 2020. This independent backup branch contains the sanitized **26.7.1 / 25G241 / Darwin 25.6.x** Intel-primary configuration, OpenCore 1.0.7, HID V12, MIC22X and OLED **4.7.2**. I confirmed Wi-Fi, audio and trackpad after a full cold start. With NVIDIA paused, SSDT-DDGPU enabled and the unchanged R4 service, I completed **one real Apple-menu Normal Sleep/Wake**: a brief horizontal strip flashed at the top, my Apple Watch unlocked the computer, and the desktop returned. This is one successful cycle, not repeated/lid-sleep qualification. The backup EFI keeps NVIDIA disabled, including a persistent `nullmoth-remove=1` probe-disable flag for machines where the experimental driver is already installed. The existing NVIDIA startup job must also remain paused. `main` is not updated by this backup. See [my latest results and the two separate configurations](docs/STATE-2026-10-12.md).
 
-**New NVIDIA evidence:** the owner-local NVRM + rebuilt Tahoe NVAccel installation initialized the Quadro RTX 5000 once, reported 16 GiB VRAM, and passed real NVIDIA Metal integer compute and offscreen rendering with Intel primary 10-bit preserved. See [app-only NVIDIA setup, limits and recovery](docs/NVIDIA-APP-ONLY.md). The optional startup service and all-app Metal exposure policy in `Tools/NVIDIAAppOnly` are now installed on the owner machine and independently audited; the subsequent automatic cold-boot test is still pending. This is not a CUDA, universal app-compatibility or sleep claim, and it is not installed by copying the default EFI.
+**My NVIDIA experiment:** my local NVRM + rebuilt Tahoe NVAccel installation initialized the Quadro RTX 5000, reported 16 GiB VRAM, and passed small NVIDIA Metal integer-compute and offscreen-render tests while Intel retained the internal display. After backing up the NVIDIA-off state, I restored NVIDIA and cold-started: automatic initialization succeeded, but my next sleep/wake **failed** and I forced a reboot. WindowServer timed out and its stack waited in Intel's graphics scheduler; R4 did not complete its redraw. The joint NVIDIA-on/DDGPU-off state is implicated, not a proven single root cause. See [app-only NVIDIA setup, limits and recovery](docs/NVIDIA-APP-ONLY.md). I do not claim CUDA, universal application compatibility, or working sleep with NVIDIA active. Copying the public EFI does not install NVIDIA.
+
+**10-bit limitation:** I restored and verified 30-bit `ARGB2101010` at 1680×945 HiDPI / 60 Hz using my existing BetterDisplay installation. R4's wake redraw can return it to 8-bit. Automatic 10-bit retention is **not implemented**; I chose not to add a program/service or modify R4 for it.
 
 Start with the current [26.7.1 setup and qualification guide](docs/MAIN-26.7.1.md), [reinstall guide](docs/REINSTALL.md) and [machine-readable status](docs/STATUS-26.7.1.json). Personal SMBIOS and Apple-derived dependencies are omitted. A complete clean reinstall has not been rehearsed; this is not a full OS backup or a drop-in universal EFI.
 
-The previous, owner-validated **26.2 / 25C56 OLED-wake version** is preserved unchanged at `843bab0` on [backup/macos-26.2-v61p5-mic22x-20261011](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011). Use that branch for 26.2. Changing EFI alone does not downgrade macOS or restore root patches.
+My previously validated **26.2 / 25C56 OLED-wake version** is preserved unchanged at `843bab0` on [backup/macos-26.2-v61p5-mic22x-20261011](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011). Use that branch for 26.2. Changing EFI alone does not downgrade macOS or restore root patches.
 
 Security stays paired: `amfi=0x80`, SIP `03080000`, SecureBootModel Disabled, AMFIPass disabled. NVIDIA PCI-only is a [completed earlier experimental stage](docs/NVIDIA-PCI-ONLY.md); current bounded Metal evidence and the optional startup overlay are documented separately above.
 
@@ -18,7 +20,7 @@ Security stays paired: `amfi=0x80`, SIP `03080000`, SecureBootModel Disabled, AM
 
 Everything below records the old 26.2 release. Its sleep successes, binary versions and OS guards do not describe the 26.7.1 EFI now in this checkout. Use the current guide above instead.
 
-**2026-10-09 working snapshot:** refreshed from a new read-only physical ESP backup, with matched MIC22X audio. The owner confirmed working speakers, microphone and Codex dictation after a full cold shutdown/start and a separate microphone-permission repair. The public EFI is sanitized, not a complete private ESP backup. Read [current snapshot and audio setup](docs/CURRENT-SNAPSHOT.md) and [upgrade/NVIDIA assessment](docs/UPGRADE-NVIDIA.md). Neither a macOS upgrade nor an NVIDIA driver is included.
+**2026-10-09 working snapshot:** I refreshed the snapshot from a new read-only physical ESP backup, with matched MIC22X audio. I confirmed working speakers, microphone and Codex dictation after a full cold shutdown/start and a separate microphone-permission repair. The public EFI is sanitized, not a complete private ESP backup. Read [current snapshot and audio setup](docs/CURRENT-SNAPSHOT.md) and [upgrade/NVIDIA assessment](docs/UPGRADE-NVIDIA.md). Neither a macOS upgrade nor an NVIDIA driver was included in that snapshot.
 
 This release is the **currently usable, machine-validated OLED sleep/wake build**, not the older pre-fix snapshot. On the exact test machine, both Apple-menu sleep and physical-lid sleep wake to a visible, locked desktop. The OLED initially shows a solid green framebuffer for about 8–11 seconds; the R4 service then redraws it automatically. V61-P5 also fixes the earlier intermittent failure in which a real lid close was ignored.
 
@@ -84,7 +86,7 @@ The full mechanism and the final validation evidence are in [OLED wake design an
 - Trackpad and touchscreen: working with HID V12.
 - Color depth: without a BetterDisplay override, the P5/R4 lid-wake audit reported `24-Bit Color (ARGB8888)`. After enabling 10-bit in BetterDisplay 4.3.5, a new runtime audit reports `30-Bit Color (ARGB2101010)`. This is a user-space display setting, not an EFI/V61 feature; verify it again after every wake or display-mode change.
 - Broadcom BCM4360 Wi-Fi: working only with the machine's omitted Apple-derived kexts and exact-build root patches.
-- Internal audio: MIC22X input/output confirmed after a full cold shutdown/start; requires the exact-build root patch. See the [audio guide](docs/CURRENT-SNAPSHOT.md) for setup and the warm-restart qualification limit.
+- Internal audio: I confirmed MIC22X input/output after a full cold shutdown/start; requires the exact-build root patch. See the [audio guide](docs/CURRENT-SNAPSHOT.md) for setup and the warm-restart qualification limit.
 - NVIDIA Quadro RTX 5000 Max-Q: disabled in macOS.
 - Future macOS updates: unsupported until all binary patches and V61 offsets are revalidated for the new build.
 

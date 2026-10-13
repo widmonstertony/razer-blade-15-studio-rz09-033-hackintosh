@@ -2,13 +2,13 @@
 
 [简体中文](MAIN-26.7.1.zh-CN.md)
 
-This is the 2026-10-11 Intel-primary baseline, **not NVIDIA installation**. The previous 26.2 configuration is on [the backup branch](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011). Choose a branch matching your OS. EFI/root-patch backups are not full macOS or personal-data backups; the old branch cannot downgrade an upgraded system.
+This is my 2026-10-12 NVIDIA-off backup, **not NVIDIA installation**. See [my current results](STATE-2026-10-12.md): one menu wake passed, but the NVIDIA-enabled combination failed. The previous 26.2 configuration is on [the backup branch](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011). Choose a branch matching your OS. EFI/root-patch backups are not full macOS or personal-data backups; the old branch cannot downgrade an upgraded system.
 
 ## Exact target and limits
 
 Only RZ09-0330Q / BIOS 1.06 / i7-10875H / Intel `8086:9bc4` / PCH `8086:068d` / Samsung OLED `4c83:a029` SDCA029 / BCM4360 `14e4:43a0` / ALC298. System: **26.7.1, 25G241, Darwin 25.6.x**, OpenCore 1.0.7. No assurance for other panels, BIOSes, devices or OS builds. Check actual hardware, not just the spoofed MacBookPro16,1 model.
 
-Owner-confirmed after cold start: Wi-Fi, audio, trackpad. OLED 4.7.1 boot reports verified routes and IOSleep stub resolution; R4 is running. New-build **menu/lid sleep/wake, lock, repeated cycles, headphones, Bluetooth and all-app microphone use still need their own acceptance**. The prior 26.2 green-then-redraw wake success is historical evidence only. A clean reinstall has not been rehearsed.
+I confirmed Wi-Fi, audio and trackpad after cold start, and one menu Normal Sleep/Wake with OLED 4.7.2, R4 and NVIDIA off. **Lid wake, password-only lock, repeated cycles, headphones, Bluetooth and all-app microphone use still need their own acceptance** on this build. NVIDIA-on wake failed. A clean reinstall has not been rehearsed.
 
 Public kext copies have compiler-path/debug metadata removed with Apple `strip -S`. All non-debug sections and external symbol/address lists were compared and remain identical to the privately boot-qualified binaries. Public hashes consequently differ; the stripped public copies still require your USB boot acceptance. See [binary sanitation evidence](PUBLIC-BINARY-SANITIZATION.json). The physical EFI was not altered by publication.
 
@@ -26,7 +26,7 @@ Public kext copies have compiler-path/debug metadata removed with Apple `strip -
 4. In the staging EFI, replace MLB, ROM, SystemSerialNumber and SystemUUID with your own unique MacBookPro16,1 identity. Existing owners should preserve their own identity. Remove the optional Ubuntu BlessOverride if absent. Do not copy another person's BCD, serial or raw EFI image.
 5. Run OpenCore **1.0.7** `ocvalidate` and `plutil -lint` on the staged config. Place it on an independently prepared FAT32 USB and boot from firmware. Never erase/write a disk without verifying the exact target. These preparation tools do not do it for you.
 
-The public main keeps SSDT-DDGPU enabled, Intel properties unchanged, Wi-Fi Add/Block entries paired at 25.6.0–25.6.99 and OLED bounded to 25.6.0–25.6.99. The explicit `-razer-oled25g241-test` flag remains because wake qualification is pending. Unknown CFL fingerprints refuse patches; refusal does not guarantee native wake.
+This backup keeps SSDT-DDGPU enabled, Intel properties unchanged, Wi-Fi Add/Block entries paired at 25.6.0–25.6.99 and OLED bounded to 25.6.0–25.6.99. Its persistent `nullmoth-remove=1` variable prevents an already-installed experimental NVIDIA driver from probing; pause the existing `com.tonytan.nvidia-app-only` job separately if installed. The backup does not install that job or its private recovery EFI tool. The explicit `-razer-oled25g241-test` flag remains because only one wake cycle passed. Unknown CFL fingerprints refuse patches; refusal does not guarantee native wake.
 
 ## 2. Restore Wi-Fi and audio roots
 
@@ -59,7 +59,7 @@ zsh Tools/verify-v61p5.sh
 ioreg -r -c RazerOLEDWakeFix -l -w0
 ```
 
-Require version `REL-471-2026-10-11`, `applied-verified-s3-edp14-rate-select-v61`, `all-v60-routes-plus-edp14-rate-selector-call-site-verified` and `verified-single-kc-branch-stub-to-canonical-IOSleep`. A merely listed kext is not success.
+Require version `REL-472-2026-10-12`, `applied-verified-s3-edp14-rate-select-v61`, `all-v60-routes-plus-edp14-rate-selector-call-site-verified` and `verified-single-kc-branch-stub-to-canonical-IOSleep`. A merely listed kext is not success.
 
 After deliberate acceptance of the unqualified new-build wake state:
 

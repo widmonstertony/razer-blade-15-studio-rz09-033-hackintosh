@@ -1,0 +1,22 @@
+{
+  "datePacific": "2026-10-12",
+  "macOS": "26.7.1",
+  "build": "25G241",
+  "version": "4.7.2",
+  "privateBinarySha256": "7de834428721144ffc53d693d736387d1d1e1386697a35511a40a7fbd1a4c4c1",
+  "publicBinarySha256": "f748dce0563e30c3a460661d9cd7f1d93ee8751840f9d9bcf1329326291fc604",
+  "infoSha256": "1d274433cbdd9d93738890b1220b95c0bccd5b50c22c38c16323359a9f070b16",
+  "r4BinaryUnchanged": true,
+  "singleNormalMenuSleepWakePassed": true,
+  "nvidiaPausedForSuccessfulWake": true,
+  "ddgpuEnabledForSuccessfulWake": true,
+  "initialTopHorizontalFlash": true,
+  "appleWatchUnlockObserved": true,
+  "automatic10BitRetention": false,
+  "tenBitRestoredManually": true,
+  "repeatSleepQualified": false,
+  "lidSleepQualified": false,
+  "nvidiaActiveSleepQualified": false,
+  "reinstallQualified": false,
+  "rawPrivateLogsPublished": false
+}

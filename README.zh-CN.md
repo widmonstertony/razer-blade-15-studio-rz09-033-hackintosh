@@ -2,15 +2,17 @@
 
 [English](README.md)
 
-## 当前 main — 2026-10-11
+## NVIDIA-off 备份 — 2026-10-12
 
-`main` 保存脱敏的 **26.7.1 / 25G241 / Darwin 25.6.x** Intel 主显示基线：OpenCore 1.0.7、HID V12、MIC22X 和 OLED **4.7.1**。机主已在完整关机再开机后确认 Wi-Fi、声音、触控板正常。OLED 已加载、补丁路由验证就绪；**26.7.1 真实睡眠唤醒尚未验收**，尤其是独显启用后的组合状态。默认公开 EFI 仍禁用 NVIDIA。
+我为自己的 Razer Blade 15 Studio 2020 维护这套配置。这个独立备份分支保存脱敏的 **26.7.1 / 25G241 / Darwin 25.6.x** Intel 主显示配置：OpenCore 1.0.7、HID V12、MIC22X 和 OLED **4.7.2**。我已在完整关机再开机后确认 Wi-Fi、声音、触控板正常。在暂停 NVIDIA、启用 SSDT-DDGPU 并保持原 R4 服务的情况下，我完成了**一次真实苹果菜单 Normal Sleep/Wake**：顶部短暂闪过横条，Apple Watch 解锁电脑，桌面恢复。这只代表一次成功，不代表多轮或合盖睡眠已验收。备份 EFI 保持 NVIDIA 禁用，并持久设置 `nullmoth-remove=1`，防止已安装的实验驱动探测独显；已有 NVIDIA 自启也需保持暂停。此次备份不更新 `main`。详见[我的最新结果与两套独立状态](docs/STATE-2026-10-12.zh-CN.md)。
 
-**新增 NVIDIA 实测证据：**机主本地的 NVRM + 重建 Tahoe NVAccel 已对 Quadro RTX 5000 完成一次固件初始化，识别 16 GiB 显存，并通过真正由 NVIDIA 执行的 Metal 整数计算和离屏绘图；Intel 主屏 10-bit 保持正常。见[应用专用 NVIDIA 配置、限制和回退](docs/NVIDIA-APP-ONLY.zh-CN.md)。`Tools/NVIDIAAppOnly` 的可选后台启动服务和全应用 Metal 开放策略现已在机主本机安装，并通过独立核验；下一轮自动冷启动测试仍待完成。这不等于 CUDA、所有软件兼容或睡眠通过，复制默认 EFI 也不会安装这些系统组件。
+**我的 NVIDIA 实验：**我本地安装的 NVRM + 重建 Tahoe NVAccel 已初始化 Quadro RTX 5000、识别 16 GiB 显存，并通过小规模 NVIDIA Metal 整数计算与离屏绘图，内屏仍由 Intel 驱动。备份 NVIDIA-off 状态后，我恢复 NVIDIA 并冷启动：自动初始化成功，但接下来的睡眠唤醒**失败**，我强制重启了。WindowServer 超时，堆栈等待 Intel 图形调度器，R4 未完成重画。这指向 NVIDIA-on/DDGPU-off 组合，不代表已证明唯一根因。见[应用专用 NVIDIA 配置、限制和回退](docs/NVIDIA-APP-ONLY.zh-CN.md)。我不宣称 CUDA、所有软件兼容或 NVIDIA 启用时睡眠可用。复制默认公开 EFI 不会安装 NVIDIA。
+
+**10-bit 限制：**我用现有 BetterDisplay 恢复并验证了 1680×945 HiDPI / 60 Hz 下的 30-bit `ARGB2101010`。R4 唤醒重画可能使它回到 8-bit。**没有实现自动保持 10-bit**；我选择暂不为此增加程序/服务，也不修改 R4。
 
 从当前 [26.7.1 配置与验收指南](docs/MAIN-26.7.1.zh-CN.md)、[重装指南](docs/REINSTALL.zh-CN.md)、[精确状态](docs/STATUS-26.7.1.json)开始。个人 SMBIOS、Apple 衍生依赖未上传。完整全新重装尚未演练；这不是完整系统备份，也不是通用即插即用 EFI。
 
-原来已验证 OLED 唤醒的 **26.2 / 25C56 版本**已按原提交 `843bab0` 保存到 [backup/macos-26.2-v61p5-mic22x-20261011](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011)。26.2 请用该分支。更换 EFI 不能降级系统，也不能恢复根补丁。
+我原来已验证 OLED 唤醒的 **26.2 / 25C56 版本**已按原提交 `843bab0` 保存到 [backup/macos-26.2-v61p5-mic22x-20261011](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011)。26.2 请用该分支。更换 EFI 不能降级系统，也不能恢复根补丁。
 
 安全设置仍配对保留：`amfi=0x80`、SIP `03080000`、SecureBootModel Disabled、AMFIPass 禁用。NVIDIA PCI-only 是[已经完成的早期实验阶段](docs/NVIDIA-PCI-ONLY.zh-CN.md)；当前有界 Metal 实测及可选自动服务见上方独立指南。
 
@@ -18,7 +20,7 @@
 
 以下内容保留旧版本记录，其中睡眠成功、二进制版本及系统限制不代表本目录的 26.7.1 EFI。请先使用上方新版指南。
 
-**2026-10-09 可用状态快照：**从新一轮只读实体 ESP 备份刷新，配对加入 MIC22X 音频。机主确认完整关机再开机后扬声器、麦克风可用；另行修复应用麦克风授权后，Codex 听写也可用。公开 EFI 已脱敏，不是完整私有 ESP 镜像。请阅读[当前快照与音频配置](docs/CURRENT-SNAPSHOT.zh-CN.md)和[升级 / NVIDIA 评估](docs/UPGRADE-NVIDIA.zh-CN.md)。此次没有升级 macOS，也没有加入 NVIDIA 驱动。
+**2026-10-09 可用状态快照：**我从新一轮只读实体 ESP 备份刷新，配对加入 MIC22X 音频。我确认完整关机再开机后扬声器、麦克风可用；另行修复应用麦克风授权后，Codex 听写也可用。公开 EFI 已脱敏，不是完整私有 ESP 镜像。请阅读[当前快照与音频配置](docs/CURRENT-SNAPSHOT.zh-CN.md)和[升级 / NVIDIA 评估](docs/UPGRADE-NVIDIA.zh-CN.md)。当时没有升级 macOS，也没有加入 NVIDIA 驱动。
 
 这个版本是**目前可日常使用、并经过本机验证的 OLED 睡眠唤醒版本**，不再是旧的“修复前基线”。在完全匹配的测试机器上，苹果菜单睡眠和真实物理合盖睡眠都能唤醒到可见、仍保持锁定的桌面。OLED 刚亮时仍会显示约 8–11 秒整块绿色，随后由 R4 服务自动重画。V61-P5 还修复了旧版偶发吞掉真实合盖事件的问题。
 
@@ -84,7 +86,7 @@
 - 触控板和触屏：HID V12 下可用。
 - 色深：未启用 BetterDisplay 覆盖时，P5/R4 合盖唤醒审计为 `24-Bit Color (ARGB8888)`；在 BetterDisplay 4.3.5 中启用 10-bit 后，新一轮运行时审计为 `30-Bit Color (ARGB2101010)`。这是用户态显示设置，不是 EFI/V61 自动提供的功能；每次唤醒或切换显示模式后都应重新核对。
 - Broadcom BCM4360 Wi-Fi：依赖仓库未包含的 Apple 派生 kext 和完全匹配系统版本的根补丁。
-- 内置音频：MIC22X 在完整关机再开机后，输入输出经机主确认可用；仍依赖完全匹配版本的根补丁。配置方法和热重启验收限制见[音频说明](docs/CURRENT-SNAPSHOT.zh-CN.md)。
+- 内置音频：我确认 MIC22X 在完整关机再开机后输入输出可用；仍依赖完全匹配版本的根补丁。配置方法和热重启验收限制见[音频说明](docs/CURRENT-SNAPSHOT.zh-CN.md)。
 - NVIDIA Quadro RTX 5000 Max-Q：在 macOS 下禁用。
 - 后续 macOS 更新：在重新验证所有二进制补丁和 V61 偏移前不支持。
 

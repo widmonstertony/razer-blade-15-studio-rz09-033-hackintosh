@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-Version 4.7.1 is now in the sanitized 26.7.1 main snapshot. On 2026-10-11 actual boot verified the single IOSleep FF25 stub/GOT resolution and fully armed patch routes; Wi-Fi/audio/trackpad are owner-confirmed and R4 is running. **Real 26.7.1 sleep/wake remains unqualified.** Static/sanitizer checks and successful loading do not prove wake. The 26.2 V61 4.5.0 snapshot remains unchanged on the backup branch. Read [current setup/status](../../docs/MAIN-26.7.1.md).
+Version 4.7.2 is included in this sanitized 26.7.1 NVIDIA-off backup. I observed one successful menu Sleep/Wake with the original DDGPU table enabled and unchanged R4; repeating with NVIDIA enabled failed. Read [my exact results and limits](../../docs/STATE-2026-10-12.md). This adds a bounded sleep-phase gate in `SleepPhaseGate.hpp`; 48 ASan/UBSan fixture cases preserve the legacy path and reject the observed premature restore. Repeated/lid wake and NVIDIA coexistence remain unqualified. Static tests alone do not prove wake. The 26.2 branch remains unchanged.
 
 DriverProfiles.hpp uses a bounded Mach-O LC_UUID reader before hardware setup/patching. 25C56's UUID is 0A970005-966B-39C9-9D30-1E8F9BF6F86A. Its original V61 logic and 10 exact patterns/call offsets remain separate and unchanged. All 10 offline pattern/call/shape checks pass.
 

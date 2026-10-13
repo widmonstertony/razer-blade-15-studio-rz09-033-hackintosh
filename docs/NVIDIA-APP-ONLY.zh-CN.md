@@ -2,6 +2,8 @@
 
 [English](NVIDIA-APP-ONLY.md)
 
+**2026-10-12 更新：**我恢复 NVIDIA 后观察到自动初始化成功，但接下来的真实睡眠唤醒失败，出现 WindowServer 看门狗和 Intel 调度器等待。本分支备份另一套 NVIDIA-off 状态：OLED 4.7.2、原 R4 和 DDGPU 启用时，一次菜单唤醒成功。见[我的最新结果与恢复边界](STATE-2026-10-12.zh-CN.md)。以下计算/安装证据是历史记录，其中待测措辞不是最新睡眠状态。恢复 NVIDIA-off 备份时不要运行这个 NVIDIA 自启安装器。
+
 ## 2026-10-11 的实际结果
 
 精确机主目标：RZ09-0330Q / BIOS 1.06 / i7-10875H / Intel UHD 630 `8086:9bc4` / Quadro RTX 5000 Max-Q TU104 `10de:1eb5`，子系统 `1a58:200a` / Samsung OLED `4c83:a029` / macOS 26.7.1 `25G241`。

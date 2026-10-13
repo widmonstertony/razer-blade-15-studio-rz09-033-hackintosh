@@ -23,7 +23,7 @@ if [[ "$(/usr/bin/sw_vers -productVersion)" == 26.7.1 && \
 		exit 65
 	}
 	rescue_driver_state="$(/usr/sbin/ioreg -r -c RazerOLEDWakeFix -l -w 0)"
-	for rescue_marker in REL-471-2026-10-11 \
+	for rescue_marker in REL-472-2026-10-12 \
 		all-v60-routes-plus-edp14-rate-selector-call-site-verified \
 		applied-verified-s3-edp14-rate-select-v61 \
 		verified-single-kc-branch-stub-to-canonical-IOSleep

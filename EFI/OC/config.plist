@@ -1549,11 +1549,13 @@
 				Rg==
 				</data>
 				<key>boot-args</key>
-				<string>-v keepsyms=1 debug=0x100 amfi=0x80 -lilubetaall -razer-oled25g241-test</string>
+				<string>-v keepsyms=1 debug=0x100 amfi=0x80 -lilubetaall -razer-oled25g241-test nvaccel=1 nvfb=0 -nvrmnogo -nvrmnobootscreen -nvrmnoflip</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==
 				</data>
+				<key>nullmoth-remove</key>
+				<string>1</string>
 				<key>prev-lang:kbd</key>
 				<data>
 				ZW46MjUy
@@ -1575,6 +1577,7 @@
 			</array>
 			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
 			<array>
+				<string>nullmoth-remove</string>
 				<string>boot-args</string>
 				<string>ForceDisplayRotationInEFI</string>
 				<string>csr-active-config</string>

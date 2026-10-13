@@ -2,13 +2,13 @@
 
 [English](MAIN-26.7.1.md)
 
-这是 2026-10-11 的 Intel 主显示基线，**不是 NVIDIA 安装包**。旧 26.2 版本保留在[备份分支](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011)。必须选择匹配系统的分支。EFI/补丁备份不是完整 macOS 或个人数据备份，旧分支不能给已升级系统降级。
+这是我的 2026-10-12 NVIDIA-off 备份，**不是 NVIDIA 安装包**。见[我的最新结果](STATE-2026-10-12.zh-CN.md)：一次菜单唤醒成功，NVIDIA 启用的组合失败。旧 26.2 版本保留在[备份分支](https://github.com/widmonstertony/razer-blade-15-studio-rz09-033-hackintosh/tree/backup/macos-26.2-v61p5-mic22x-20261011)。必须选择匹配系统的分支。EFI/补丁备份不是完整 macOS 或个人数据备份，旧分支不能给已升级系统降级。
 
 ## 精确目标和限制
 
 仅限 RZ09-0330Q / BIOS 1.06 / i7-10875H / Intel `8086:9bc4` / PCH `8086:068d` / Samsung OLED `4c83:a029` SDCA029 / BCM4360 `14e4:43a0` / ALC298。系统 **26.7.1、25G241、Darwin 25.6.x**，OpenCore 1.0.7。其他面板、BIOS、设备和系统版本不保证；要检查实际硬件，不能只看伪装的 MacBookPro16,1。
 
-机主冷启动后确认：Wi-Fi、音频、触控板。OLED 4.7.1 的补丁路由及 IOSleep 跳板检查通过，R4 已运行。新版的**菜单/合盖唤醒、锁屏、重复循环、耳机、蓝牙及所有 App 麦克风仍需单独验收**。旧 26.2 的绿屏后重画成功只是历史证据。完整全新重装尚未演练。
+我冷启动后确认了 Wi-Fi、音频、触控板，并在 OLED 4.7.2、R4 和 NVIDIA-off 下完成一次菜单 Normal Sleep/Wake。新版的**合盖唤醒、纯密码锁屏、重复循环、耳机、蓝牙及所有 App 麦克风仍需单独验收**；NVIDIA-on 唤醒失败。完整全新重装尚未演练。
 
 公开 kext 副本使用 Apple `strip -S` 移除了本机编译路径/调试元数据；所有非调试区段及外部符号/地址列表均与私人实机已加载版本逐项一致，因此公开哈希会不同。公开去调试副本仍需使用者 USB 启动验收，见[二进制脱敏证据](PUBLIC-BINARY-SANITIZATION.json)。发布处理没有改实体 EFI。
 
@@ -26,7 +26,7 @@
 4. 暂存配置的 MLB、ROM、SystemSerialNumber、SystemUUID 换成你独有的 MacBookPro16,1 身份；已有系统保留自己的身份。无 Ubuntu 就移除可选 BlessOverride。不要复制他人的 BCD、序列号或完整 EFI 镜像。
 5. 用 OpenCore **1.0.7** 的 `ocvalidate` 和 `plutil -lint` 校验暂存配置，放到另行准备的 FAT32 USB，再从固件启动。擦除/写盘前必须确认精确目标；这些准备工具不会替你擦盘或写盘。
 
-公开 main 仍启用 SSDT-DDGPU 关闭独显，Intel 属性不变；无线 Add/Block 成套限定 25.6.0–25.6.99，OLED 也限定该范围。因睡眠未验收，保留 `-razer-oled25g241-test` 明确标记。未知 CFL 指纹拒绝打补丁；拒绝不代表原生唤醒一定成功。
+这个备份启用 SSDT-DDGPU 关闭独显，Intel 属性不变；无线 Add/Block 成套限定 25.6.0–25.6.99，OLED 也限定该范围。持久的 `nullmoth-remove=1` 防止已安装的实验 NVIDIA 驱动探测；若已安装 `com.tonytan.nvidia-app-only` 自启，还需单独暂停它。备份不安装该服务，也不提供私有恢复 EFI 工具。因为只通过一次唤醒，保留 `-razer-oled25g241-test` 明确标记。未知 CFL 指纹拒绝打补丁；拒绝不代表原生唤醒一定成功。
 
 ## 2. 恢复 Wi-Fi 和音频根补丁
 
@@ -59,7 +59,7 @@ zsh Tools/verify-v61p5.sh
 ioreg -r -c RazerOLEDWakeFix -l -w0
 ```
 
-必须看到版本 `REL-471-2026-10-11`、`applied-verified-s3-edp14-rate-select-v61`、`all-v60-routes-plus-edp14-rate-selector-call-site-verified`、`verified-single-kc-branch-stub-to-canonical-IOSleep`。仅 kext 出现在列表中不算成功。
+必须看到版本 `REL-472-2026-10-12`、`applied-verified-s3-edp14-rate-select-v61`、`all-v60-routes-plus-edp14-rate-selector-call-site-verified`、`verified-single-kc-branch-stub-to-canonical-IOSleep`。仅 kext 出现在列表中不算成功。
 
 明确接受新版唤醒未验收后：
 
